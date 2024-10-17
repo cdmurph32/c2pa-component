@@ -1,0 +1,12 @@
+[package]
+name = "c2pa-component"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = { version = "0.34", features = ["default"] }
+c2pa = { git = "https://github.com/cdmurph32/c2pa-rs.git", branch = "wasm32-wasi_0.36.3", features = ["unstable_api"]}
+wasi = "0.13.3+wasi-0.2.2"
