@@ -1,75 +1,61 @@
 mod bindings {
     wit_bindgen::generate!({
         world: "cai",
-        with: {
-            "wasi:io/streams@0.2.2": ::wasi::io::streams,
-            "wasi:io/poll@0.2.2": ::wasi::io::poll,
-            "wasi:io/error@0.2.2": ::wasi::io::error,
-        }
+        with: {},
     });
 }
 
-use crate::bindings::exports::adobe::cai::{reader::Guest, types::Error};
-use std::io::{self, Cursor, Read};
+use crate::bindings::exports::adobe::cai::{manifest::Guest, types::Error};
+use c2pa::{settings, ManifestStore};
 
-pub struct Reader;
+pub struct Manifest;
 
-impl Guest for Reader {
-    fn from_stream(
-        format: String,
-        stream: wasi::io::streams::InputStream,
-    ) -> Result<String, Error> {
-        let mut stream = add_seek_to_read(stream).unwrap();
-        let reader = match c2pa::Reader::from_stream(&format, &mut stream) {
-            Ok(reader) => reader,
-            Err(e) => return Err(Error::Other(e.to_string())),
-        };
-        let json = reader.to_string();
-        Ok(json)
+impl Guest for Manifest {
+    fn get_manifest_store(
+        data: Vec<u8>,
+        mime_type: String,
+        settings: Option<String>,
+    ) -> Result<Vec<u8>, Error> {
+        let result = get_manifest_store_data(&data, &mime_type, settings.as_deref()).unwrap();
+        Ok(serde_json::to_vec(&result).unwrap())
     }
 
-    fn from_manifest_data_and_stream(
-        manifest_data: Vec<u8>,
-        format: String,
-        stream: wasi::io::streams::InputStream,
-    ) -> Result<String, Error> {
-        let mut stream = add_seek_to_read(stream).unwrap();
-        let reader =
-            match c2pa::Reader::from_manifest_data_and_stream(&manifest_data, &format, &mut stream)
-            {
-                Ok(reader) => reader,
-                Err(e) => return Err(Error::Other(e.to_string())),
-            };
-        let json = reader.to_string();
-        Ok(json)
+    fn get_manifest_store_from_manifest_and_asset(
+        manifest: Vec<u8>,
+        asset: Vec<u8>,
+        mime_type: String,
+        settings: Option<String>,
+    ) -> Result<Vec<u8>, Error> {
+        let result = get_manifest_store_data_from_manifest_and_asset_bytes(
+            &manifest,
+            &mime_type,
+            &asset,
+            settings.as_deref(),
+        )
+        .unwrap();
+        Ok(serde_json::to_vec(&result).unwrap())
     }
-    /*
-        // uniffi doesn't allow mutable parameters, so we we use an adapter
-        let reader = c2pa::Reader::from_stream(format, &mut stream)?;
-        let json = reader.to_string();
-        if let Ok(mut st) = self.reader.try_write() {
-            *st = reader;
-        } else {
-            return Err(Error::RwLock);
-        };
-        Ok(json)
-    }
-
-    fn from_manifest_data_and_stream() {
-        panic!("Not implemented");
-    }
-
-    fn json(&self) -> Result<String> {
-        if let Ok(st) = self.reader.try_read() {
-            Ok(st.json())
-        } else {
-            Err(Error::RwLock)
-        }
-    }
-    */
 }
-fn add_seek_to_read<R: Read>(mut reader: R) -> io::Result<Cursor<Vec<u8>>> {
-    let mut buffer = Vec::new();
-    reader.read_to_end(&mut buffer)?;
-    Ok(Cursor::new(buffer))
+
+pub fn get_manifest_store_data(
+    data: &[u8],
+    mime_type: &str,
+    settings: Option<&str>,
+) -> Result<ManifestStore, Error> {
+    if let Some(settings) = settings {
+        settings::load_settings_from_str(settings, "json").unwrap();
+    }
+    Ok(ManifestStore::from_bytes(mime_type, data, true).unwrap())
+}
+
+pub fn get_manifest_store_data_from_manifest_and_asset_bytes(
+    manifest_bytes: &[u8],
+    format: &str,
+    asset_bytes: &[u8],
+    settings: Option<&str>,
+) -> Result<ManifestStore, Error> {
+    if let Some(settings) = settings {
+        settings::load_settings_from_str(settings, "json").unwrap();
+    }
+    Ok(ManifestStore::from_manifest_and_asset_bytes(manifest_bytes, format, asset_bytes).unwrap())
 }

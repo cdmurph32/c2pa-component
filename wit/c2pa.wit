@@ -1,22 +1,11 @@
 package adobe:cai@0.1.0;
 
 world cai {
-    export reader;
-    export builder;
+    export manifest;
     export types;
 }
 
 interface types {
-
-    use wasi:io/streams@0.2.2.{input-stream, output-stream};
-
-/*
-    resource rw-stream {
-        read-stream: func(length: u64) -> list<u8>;
-        seek-stream: func(pos: s64, mode: seek-mode) -> u64;
-        write-stream: func(data: list<u8>) -> u64;
-    }
-*/
 
     variant error {
         assertion(string),
@@ -36,55 +25,11 @@ interface types {
         signature(string),
         verify(string),
     }
-
-    enum signing-alg {
-        es256,
-        es384,
-        es512,
-        ps256,
-        ps384,
-        ps512,
-        ed25519
-    }
-
-    /*
-    enum seek-mode {
-        start,
-        end,
-        current
-    }
-
-    resource signer-callback {
-        sign: func(data: list<u8>) -> list<u8>;
-    }
-
-    resource callback-signer {
-        constructor(callback: signer-callback, alg: signing-alg, certs: list<u8>, ta-url: option<string>);
-    }
-    */
 }
 
-interface reader {
+interface manifest {
     use types.{error};
-    use wasi:io/streams@0.2.2.{input-stream, output-stream};
 
-    from-stream: func(format: string, reader: input-stream) -> result<string, error>;
-    from-manifest-data-and-stream: func(manifest-data: list<u8>, format: string, reader: input-stream) -> result<string, error>;
-    //json: func() -> result<string, error>;
-    //resource-to-stream: func(uri: string, rw-stream: output-stream) -> result<u64, error>;
-}
-
-interface builder {
-    use types.{callback-signer, error};
-    use wasi:io/streams@0.2.2.{input-stream};
-
-    with-json: func(json: string) -> result<_, error>;
-    set-no-embed: func() -> result<_, error>;
-    set-remote-url: func(url: string) -> result<_, error>;
-    add-resource: func(uri: string, rw-stream: input-stream) -> result<_, error>;
-    add-ingredient: func(ingredient-json: string, format: string, rw-stream: input-stream) -> result<_, error>;
-    to-archive: func(rw-stream: input-stream) -> result<_, error>;
-    from-archive: func(rw-stream: input-stream) -> result<_, error>;
-    sign: func(signer: callback-signer, format: string, input: input-stream) -> result<list<u8>, error>;
-    sign-file: func(signer: callback-signer, input: string, output: string) -> result<list<u8>, error>;
+    get-manifest-store: func(buf: list<u8>, mime-type: string, settings: option<string>) -> result<list<u8>, error>;
+    get-manifest-store-from-manifest-and-asset: func(manifest-buf: list<u8>, asset-buf: list<u8>, mime-type: string, settings: option<string>) -> result<list<u8>, error>;
 }
