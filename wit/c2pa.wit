@@ -10,6 +10,7 @@ interface types {
     variant error {
         assertion(string),
         assertion-not-found(string),
+        bad-param(string),
         decoding(string),
         encoding(string),
         file-not-found(string),
@@ -28,8 +29,19 @@ interface types {
 }
 
 interface manifest {
+    use wasi:io/streams@0.2.2.{input-stream, output-stream};
     use types.{error};
 
     get-manifest-store: func(buf: list<u8>, mime-type: string, settings: option<string>) -> result<list<u8>, error>;
     get-manifest-store-from-manifest-and-asset: func(manifest-buf: list<u8>, asset-buf: list<u8>, mime-type: string, settings: option<string>) -> result<list<u8>, error>;
+
+    resource builder {
+        constructor(json: option<string>);
+        add-resource: func(uri: string, %stream: input-stream) -> result<_, error>;
+        set-remote-url: func(url: string);
+        add-ingredient: func(ingredient-json: string, format: string, %stream: input-stream) -> result<_, error>;
+        to-archive: func(%stream: input-stream) -> result<_, error>;
+        from-archive: static func(%stream: input-stream) -> result<builder, error>;
+    }
+
 }
