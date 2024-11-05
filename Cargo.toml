@@ -1,14 +1,3 @@
-[package]
-name = "c2pa-component"
-version = "0.1.0"
-edition = "2021"
-
-[lib]
-crate-type = ["cdylib"]
-
-[dependencies]
-wit-bindgen = { version = "0.34", features = ["default"] }
-c2pa = { git = "https://github.com/cdmurph32/c2pa-rs.git", branch = "wasm32-wasi_0.36.3_validate", features = ["unstable_api"]}
-wasi = "0.13.3+wasi-0.2.2"
-serde = { version = "1.0.197", features = ["derive"] }
-serde_json = { version = "1.0.103", features = ["arbitrary_precision"] }
+[workspace]
+resolver = "2"
+members = [ "c2pa-tool","component"]

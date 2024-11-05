@@ -1,4 +1,6 @@
 mod bindings {
+    use crate::Manifest;
+
     wit_bindgen::generate!({
         world: "cai",
         with: {
@@ -7,6 +9,8 @@ mod bindings {
             "wasi:io/error@0.2.2": ::wasi::io::error,
         }
     });
+
+    export!(Manifest);
 }
 
 use crate::bindings::exports::adobe::cai::{

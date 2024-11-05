@@ -43,5 +43,4 @@ interface manifest {
         to-archive: func(%stream: input-stream) -> result<_, error>;
         from-archive: static func(%stream: input-stream) -> result<builder, error>;
     }
-
 }
