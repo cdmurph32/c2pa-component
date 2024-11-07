@@ -7,21 +7,23 @@ mod bindings {
             "wasi:io/streams@0.2.2": ::wasi::io::streams,
             "wasi:io/poll@0.2.2": ::wasi::io::poll,
             "wasi:io/error@0.2.2": ::wasi::io::error,
-        }
+        },
+        path: "../wit",
     });
 
     export!(Manifest);
 }
 
 use crate::bindings::exports::adobe::cai::{
-    manifest::{Guest, GuestBuilder},
+    manifest::{Builder, Guest, GuestBuilder, GuestReader, Reader},
     types::Error,
 };
-use bindings::exports::adobe::cai::manifest::Builder;
-use c2pa::{settings, Builder as C2paBuilder, Error as C2paError, ManifestStore};
+use c2pa::{
+    settings, Builder as C2paBuilder, Error as C2paError, ManifestStore, Reader as C2paReader,
+};
 use std::cell::RefCell;
 use std::io::{Cursor, Read};
-use wasi::io::streams::InputStream;
+use wasi::io::streams::{InputStream, OutputStream};
 
 pub struct Manifest;
 
@@ -52,6 +54,7 @@ impl Guest for Manifest {
     }
 
     type Builder = ComponentBuilder;
+    type Reader = ComponentReader;
 }
 
 pub struct ComponentBuilder {
@@ -76,7 +79,7 @@ impl GuestBuilder for ComponentBuilder {
             .add_resource(&uri, seekable_stream)
         {
             Ok(_) => Ok(()),
-            Err(e) => Err(convert_error(e)),
+            Err(e) => Err(e.into()),
         }
     }
 
@@ -97,7 +100,7 @@ impl GuestBuilder for ComponentBuilder {
             &mut seekable_stream,
         ) {
             Ok(_) => Ok(()),
-            Err(e) => Err(convert_error(e)),
+            Err(e) => Err(e.into()),
         }
     }
 
@@ -105,16 +108,74 @@ impl GuestBuilder for ComponentBuilder {
         let seekable_stream = add_seek_to_read(stream).unwrap();
         match self.builder.borrow_mut().to_archive(seekable_stream) {
             Ok(_) => Ok(()),
-            Err(e) => Err(convert_error(e)),
+            Err(e) => Err(e.into()),
         }
     }
 
     fn from_archive(stream: InputStream) -> Result<Builder, Error> {
         let seekable_stream = add_seek_to_read(stream).unwrap();
         let component_builder = ComponentBuilder {
+            //TODO pass error
             builder: C2paBuilder::from_archive(seekable_stream).unwrap().into(),
         };
         Ok(Builder::new(component_builder))
+    }
+}
+
+pub struct ComponentReader {
+    reader: RefCell<C2paReader>,
+}
+
+impl GuestReader for ComponentReader {
+    fn new(json: Option<String>) -> Self {
+        Self {
+            reader: match json {
+                Some(json) => C2paReader::from_json(&json).unwrap().into(),
+                None => C2paReader::default().into(),
+            },
+        }
+    }
+
+    fn from_stream(format: String, stream: InputStream) -> Result<Reader, Error> {
+        let seekable_stream = add_seek_to_read(stream).unwrap();
+        Ok(Reader::new(ComponentReader {
+            reader: C2paReader::from_stream(&format, seekable_stream)?.into(),
+        }))
+    }
+
+    fn from_manifest_data_and_stream(
+        manifest_bytes: Vec<u8>,
+        format: String,
+        stream: InputStream,
+    ) -> Result<Reader, Error> {
+        let seekable_stream = add_seek_to_read(stream).unwrap();
+        //TODO pass error
+        Ok(Reader::new(ComponentReader {
+            reader: C2paReader::from_manifest_data_and_stream(
+                &manifest_bytes,
+                &format,
+                seekable_stream,
+            )
+            .unwrap()
+            .into(),
+        }))
+    }
+
+    fn resource_to_stream(&self, uri: String, mut stream: OutputStream) -> Result<u64, Error> {
+        let mut seekable_stream = Cursor::new(Vec::new());
+        self.reader
+            .borrow_mut()
+            .resource_to_stream(&uri, &mut seekable_stream)?;
+
+        seekable_stream.set_position(0); // Reset cursor to the beginning
+        let bytes_written = std::io::copy(&mut seekable_stream, &mut stream)
+            .map_err(|e| Error::Io(e.to_string()))?;
+
+        Ok(bytes_written)
+    }
+
+    fn json(&self) -> String {
+        self.reader.borrow_mut().json()
     }
 }
 
@@ -148,17 +209,19 @@ fn add_seek_to_read<R: Read>(mut reader: R) -> std::io::Result<Cursor<Vec<u8>>> 
 }
 
 //TODO: Add more error handling
-fn convert_error(e: C2paError) -> Error {
-    match e {
-        C2paError::AssertionUnsupportedVersion => {
-            Error::NotSupported("Unsupported assertion version".to_string())
+impl From<C2paError> for Error {
+    fn from(e: C2paError) -> Self {
+        match e {
+            C2paError::AssertionUnsupportedVersion => {
+                Error::NotSupported("Unsupported assertion version".to_string())
+            }
+            C2paError::AssertionMissing { url } => {
+                Error::AssertionNotFound(format!("Assertion missing, url {url}"))
+            }
+            C2paError::AssertionEncoding => Error::Assertion("Encode failed".to_string()),
+            C2paError::AssertionDecoding(err) => Error::Assertion(format!("Decode failed {err}")),
+            C2paError::OtherError(err) => Error::Other(err.to_string()),
+            _ => Error::Other(format!("Unknown error {e}")),
         }
-        C2paError::AssertionMissing { url } => {
-            Error::AssertionNotFound(format!("Assertion missing, url {url}"))
-        }
-        C2paError::AssertionEncoding => Error::Assertion("Encode failed".to_string()),
-        C2paError::AssertionDecoding(err) => Error::Assertion(format!("Decode failed {err}")),
-        C2paError::OtherError(err) => Error::Other(err.to_string()),
-        _ => Error::Other(format!("Unknown error {e}")),
     }
 }

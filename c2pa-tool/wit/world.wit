@@ -1,6 +1,0 @@
-package adobe:c2pa-tool@0.1.0;
-
-world c2pa-tool {
-    import adobe:cai/cai@0.1.0;
-}
-

@@ -4,7 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1"
+c2pacomponent = { path = "../component" }
+clap = { version = "4.5.20", features = ["derive"] }
+wit-bindgen = { version = "0.34", features = ["default"] }
 wit-bindgen-rt = { version = "0.34.0", features = ["bitflags"] }
+wasi = "0.13.3+wasi-0.2.2"
 
 [profile.release]
 codegen-units = 1
@@ -13,11 +18,10 @@ debug = false
 strip = true
 lto = true
 
-[package.metadata.component]
-package = "component:c2pa-tool"
-
 [package.metadata.component.target]
-path = "wit"
+path = "../wit"
+world = "c2pa-tool"
 
 [package.metadata.component.dependencies]
-"adobe:cai" = { path = "wit/deps/adobe" }
+"wasi:io" = { path = "../wit/deps/io" }
+"adobe:cai" = { path = "../wit/cai.wit" }

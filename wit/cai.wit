@@ -6,6 +6,7 @@ world cai {
 }
 
 interface types {
+    use wasi:io/streams@0.2.2.{output-stream};
 
     variant error {
         assertion(string),
@@ -43,4 +44,16 @@ interface manifest {
         to-archive: func(%stream: input-stream) -> result<_, error>;
         from-archive: static func(%stream: input-stream) -> result<builder, error>;
     }
+
+    resource reader {
+        constructor(json: option<string>);
+        from-stream: static func(format: string, %stream: input-stream) -> result<reader, error>;
+        from-manifest-data-and-stream: static func(manifest-data: list<u8>, format: string, %stream: input-stream) -> result<reader, error>;
+        json: func() -> string;
+        resource-to-stream: func(uri: string, %stream: output-stream) -> result<u64, error>;
+    }
+}
+
+world c2pa-tool {
+    import manifest;
 }

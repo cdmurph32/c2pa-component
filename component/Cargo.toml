@@ -1,5 +1,6 @@
 [package]
-name = "c2pa-component"
+# TODO: rename c2pa-component
+name = "c2pacomponent"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,7 +15,8 @@ serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0.103", features = ["arbitrary_precision"] }
 
 [package.metadata.component.target]
-path = "wit"
+path = "../wit"
+world = "cai"
 
 [package.metadata.component.target.dependencies]
-"wasi:io" = { path = "wit/deps/io" }
+"wasi:io" = { path = "../wit/deps/io" }
