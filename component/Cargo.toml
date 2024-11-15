@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wit-bindgen = { version = "0.34", features = ["default"] }
+#c2pa = { path = "../../c2pa-rs/sdk", features = ["unstable_api"]}
 c2pa = { git = "https://github.com/cdmurph32/c2pa-rs.git", branch = "wasm32-wasi_0.36.3_validate", features = ["unstable_api"]}
 wasi = "0.13.3+wasi-0.2.2"
 serde = { version = "1.0.197", features = ["derive"] }

@@ -221,7 +221,10 @@ impl From<C2paError> for Error {
             C2paError::AssertionEncoding => Error::Assertion("Encode failed".to_string()),
             C2paError::AssertionDecoding(err) => Error::Assertion(format!("Decode failed {err}")),
             C2paError::OtherError(err) => Error::Other(err.to_string()),
-            _ => Error::Other(format!("Unknown error {e}")),
+            C2paError::UnsupportedType => {
+                Error::NotSupported("File type is not supported".to_string())
+            }
+            _ => Error::Other(format!("Unknown error: {e}")),
         }
     }
 }
