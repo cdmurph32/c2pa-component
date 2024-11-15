@@ -322,7 +322,6 @@ checksum = "9ac0150caa2ae65ca5bd83f25c7de183dea78d4d366469f148435e2acfbad0da"
 [[package]]
 name = "c2pa"
 version = "0.37.1"
-source = "git+https://github.com/cdmurph32/c2pa-rs.git?branch=wasm32-wasi_0.36.3_validate#920b0a5abd0328bd48ac86ba7969f30270d2d873"
 dependencies = [
  "asn1-rs 0.5.2",
  "async-generic",

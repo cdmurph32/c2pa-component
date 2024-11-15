@@ -13,7 +13,7 @@ mod bindings {
 }
 
 use crate::bindings::adobe::cai::manifest::Reader;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use std::io::Read;
 use std::path::Path;
@@ -34,8 +34,11 @@ fn main() -> Result<()> {
     let file = open_file(file_path, OpenFlags::empty(), DescriptorFlags::READ)?;
     let stats = file.stat()?;
     eprintln!("file size {}", stats.size);
-    let stream = file.read_via_stream(stats.size).unwrap();
-    let reader = Reader::from_stream("image/jpeg", stream).unwrap();
+    let stream = file
+        .read_via_stream(0)
+        .context("Failed to read file from stream")?;
+    let reader =
+        Reader::from_stream("image/jpeg", stream).context("Failed to read manifest from stream")?;
     /*
     let contents = read_file(file)?;
     let contents_str = std::str::from_utf8(&contents)?;

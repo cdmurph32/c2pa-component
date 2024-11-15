@@ -137,7 +137,7 @@ impl GuestReader for ComponentReader {
     }
 
     fn from_stream(format: String, stream: InputStream) -> Result<Reader, Error> {
-        let seekable_stream = add_seek_to_read(stream).unwrap();
+        let seekable_stream = add_seek_to_read(stream).map_err(|e| Error::Io(e.to_string()))?;
         Ok(Reader::new(ComponentReader {
             reader: C2paReader::from_stream(&format, seekable_stream)?.into(),
         }))
