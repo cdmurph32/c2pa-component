@@ -6,7 +6,8 @@ world cai {
 }
 
 interface types {
-    use wasi:io/streams@0.2.2.{output-stream};
+    use wasi:io/streams@0.2.2.{input-stream, output-stream};
+    use wasi:filesystem/types@0.2.2.{descriptor};
 
     variant error {
         assertion(string),
@@ -27,30 +28,41 @@ interface types {
         signature(string),
         verify(string),
     }
+
+    variant input {
+        file(descriptor),
+        %stream(input-stream)
+    }
+
+    variant output {
+        file(descriptor),
+        %stream(output-stream)
+    }
+
 }
 
 interface manifest {
     use wasi:io/streams@0.2.2.{input-stream, output-stream};
-    use types.{error};
+    use types.{error, input, output};
 
     get-manifest-store: func(buf: list<u8>, mime-type: string, settings: option<string>) -> result<list<u8>, error>;
     get-manifest-store-from-manifest-and-asset: func(manifest-buf: list<u8>, asset-buf: list<u8>, mime-type: string, settings: option<string>) -> result<list<u8>, error>;
 
     resource builder {
         constructor(json: option<string>);
-        add-resource: func(uri: string, %stream: input-stream) -> result<_, error>;
+        add-resource: func(uri: string, %stream: input) -> result<_, error>;
         set-remote-url: func(url: string);
-        add-ingredient: func(ingredient-json: string, format: string, %stream: input-stream) -> result<_, error>;
-        to-archive: func(%stream: input-stream) -> result<_, error>;
-        from-archive: static func(%stream: input-stream) -> result<builder, error>;
+        add-ingredient: func(ingredient-json: string, format: string, %stream: input) -> result<_, error>;
+        to-archive: func(%stream: output) -> result<_, error>;
+        from-archive: static func(%stream: input) -> result<builder, error>;
     }
 
     resource reader {
         constructor(json: option<string>);
-        from-stream: static func(format: string, %stream: input-stream) -> result<reader, error>;
-        from-manifest-data-and-stream: static func(manifest-data: list<u8>, format: string, %stream: input-stream) -> result<reader, error>;
+        from-stream: static func(format: string, %stream: input) -> result<reader, error>;
+        from-manifest-data-and-stream: static func(manifest-data: list<u8>, format: string, %stream: input) -> result<reader, error>;
         json: func() -> string;
-        resource-to-stream: func(uri: string, %stream: output-stream) -> result<u64, error>;
+        resource-to-stream: func(uri: string, %stream: output) -> result<u64, error>;
     }
 }
 

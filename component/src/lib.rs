@@ -7,6 +7,8 @@ mod bindings {
             "wasi:io/streams@0.2.2": ::wasi::io::streams,
             "wasi:io/poll@0.2.2": ::wasi::io::poll,
             "wasi:io/error@0.2.2": ::wasi::io::error,
+            "wasi:clocks/wall-clock@0.2.2": generate,
+            "wasi:filesystem/types@0.2.2": generate,
         },
         path: "../wit",
     });
@@ -15,15 +17,20 @@ mod bindings {
 }
 
 use crate::bindings::exports::adobe::cai::{
-    manifest::{Builder, Guest, GuestBuilder, GuestReader, Reader},
+    manifest::{Builder, Guest, GuestBuilder, GuestReader, Input, Output, Reader},
     types::Error,
 };
+use bindings::exports::adobe::cai::types::Descriptor;
 use c2pa::{
     settings, Builder as C2paBuilder, Error as C2paError, ManifestStore, Reader as C2paReader,
 };
 use std::cell::RefCell;
-use std::io::{Cursor, Read};
-use wasi::io::streams::{InputStream, OutputStream};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use wasi::io::streams::OutputStream;
+
+trait ReadWriteSeekSend: Read + Write + Seek + Send {}
+
+impl<T: Read + Write + Seek + Send> ReadWriteSeekSend for T {}
 
 pub struct Manifest;
 
@@ -71,8 +78,8 @@ impl GuestBuilder for ComponentBuilder {
         }
     }
 
-    fn add_resource(&self, uri: String, stream: InputStream) -> Result<(), Error> {
-        let seekable_stream = add_seek_to_read(stream).unwrap();
+    fn add_resource(&self, uri: String, stream: Input) -> Result<(), Error> {
+        let seekable_stream = seekable_input_stream(stream).unwrap();
         match self
             .builder
             .borrow_mut()
@@ -91,9 +98,9 @@ impl GuestBuilder for ComponentBuilder {
         &self,
         ingredient_json: String,
         format: String,
-        stream: InputStream,
+        stream: Input,
     ) -> Result<(), Error> {
-        let mut seekable_stream = add_seek_to_read(stream).unwrap();
+        let mut seekable_stream = seekable_input_stream(stream).unwrap();
         match self.builder.borrow_mut().add_ingredient_from_stream(
             &ingredient_json,
             &format,
@@ -104,16 +111,26 @@ impl GuestBuilder for ComponentBuilder {
         }
     }
 
-    fn to_archive(&self, stream: InputStream) -> Result<(), Error> {
-        let seekable_stream = add_seek_to_read(stream).unwrap();
-        match self.builder.borrow_mut().to_archive(seekable_stream) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e.into()),
+    fn to_archive(&self, stream: Output) -> Result<(), Error> {
+        match stream {
+            Output::Stream(mut stream) => {
+                let mut seekable_stream = Cursor::new(Vec::new());
+                self.builder.borrow_mut().to_archive(&mut seekable_stream)?;
+                seekable_stream.set_position(0); // Reset cursor to the beginning
+                std::io::copy(&mut seekable_stream, &mut stream)
+                    .map_err(|e| Error::Io(e.to_string()))?;
+                Ok(())
+            }
+            Output::File(descriptor) => {
+                let seekable_stream = SeekableDescriptor::new(descriptor);
+                self.builder.borrow_mut().to_archive(seekable_stream)?;
+                Ok(())
+            }
         }
     }
 
-    fn from_archive(stream: InputStream) -> Result<Builder, Error> {
-        let seekable_stream = add_seek_to_read(stream).unwrap();
+    fn from_archive(stream: Input) -> Result<Builder, Error> {
+        let seekable_stream = seekable_input_stream(stream).unwrap();
         let component_builder = ComponentBuilder {
             //TODO pass error
             builder: C2paBuilder::from_archive(seekable_stream).unwrap().into(),
@@ -136,8 +153,9 @@ impl GuestReader for ComponentReader {
         }
     }
 
-    fn from_stream(format: String, stream: InputStream) -> Result<Reader, Error> {
-        let seekable_stream = add_seek_to_read(stream).map_err(|e| Error::Io(e.to_string()))?;
+    fn from_stream(format: String, stream: Input) -> Result<Reader, Error> {
+        let seekable_stream =
+            seekable_input_stream(stream).map_err(|e| Error::Io(e.to_string()))?;
         Ok(Reader::new(ComponentReader {
             reader: C2paReader::from_stream(&format, seekable_stream)?.into(),
         }))
@@ -146,9 +164,9 @@ impl GuestReader for ComponentReader {
     fn from_manifest_data_and_stream(
         manifest_bytes: Vec<u8>,
         format: String,
-        stream: InputStream,
+        stream: Input,
     ) -> Result<Reader, Error> {
-        let seekable_stream = add_seek_to_read(stream).unwrap();
+        let seekable_stream = seekable_input_stream(stream).unwrap();
         //TODO pass error
         Ok(Reader::new(ComponentReader {
             reader: C2paReader::from_manifest_data_and_stream(
@@ -161,17 +179,27 @@ impl GuestReader for ComponentReader {
         }))
     }
 
-    fn resource_to_stream(&self, uri: String, mut stream: OutputStream) -> Result<u64, Error> {
-        let mut seekable_stream = Cursor::new(Vec::new());
-        self.reader
-            .borrow_mut()
-            .resource_to_stream(&uri, &mut seekable_stream)?;
-
-        seekable_stream.set_position(0); // Reset cursor to the beginning
-        let bytes_written = std::io::copy(&mut seekable_stream, &mut stream)
-            .map_err(|e| Error::Io(e.to_string()))?;
-
-        Ok(bytes_written)
+    fn resource_to_stream(&self, uri: String, stream: Output) -> Result<u64, Error> {
+        match stream {
+            Output::Stream(mut stream) => {
+                let mut seekable_stream = Cursor::new(Vec::new());
+                self.reader
+                    .borrow_mut()
+                    .resource_to_stream(&uri, &mut seekable_stream)?;
+                seekable_stream.set_position(0); // Reset cursor to the beginning
+                let bytes_written = std::io::copy(&mut seekable_stream, &mut stream)
+                    .map_err(|e| Error::Io(e.to_string()))?;
+                Ok(bytes_written)
+            }
+            Output::File(descriptor) => {
+                let mut seekable_stream = SeekableDescriptor::new(descriptor);
+                let bytes_written = self
+                    .reader
+                    .borrow_mut()
+                    .resource_to_stream(&uri, &mut seekable_stream)?;
+                Ok(bytes_written as u64)
+            }
+        }
     }
 
     fn json(&self) -> String {
@@ -206,6 +234,81 @@ fn add_seek_to_read<R: Read>(mut reader: R) -> std::io::Result<Cursor<Vec<u8>>> 
     let mut buffer = Vec::new();
     reader.read_to_end(&mut buffer)?;
     Ok(Cursor::new(buffer))
+}
+
+struct SeekableDescriptor {
+    descriptor: Descriptor,
+    position: u64,
+}
+
+impl SeekableDescriptor {
+    fn new(descriptor: Descriptor) -> Self {
+        SeekableDescriptor {
+            descriptor,
+            position: 0,
+        }
+    }
+}
+
+impl Seek for SeekableDescriptor {
+    fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        match pos {
+            SeekFrom::Start(offset) => {
+                self.position = offset;
+            }
+            SeekFrom::End(offset) => {
+                // Assuming we have a way to get the file size
+                let file_size = 100; // Placeholder for file size
+                self.position = (file_size as i64 + offset) as u64;
+            }
+            SeekFrom::Current(offset) => {
+                self.position = (self.position as i64 + offset) as u64;
+            }
+        }
+        Ok(self.position)
+    }
+}
+
+impl Read for SeekableDescriptor {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let length = buf.len() as u64;
+        let (data, _) = self
+            .descriptor
+            .read(length, self.position)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        buf.copy_from_slice(&data);
+        self.position += length;
+        Ok(data.len())
+    }
+}
+
+impl Write for SeekableDescriptor {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let length = buf.len() as u64;
+        self.descriptor
+            .write(buf, self.position)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        self.position += length;
+        Ok(length as usize)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.descriptor
+            .sync()
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        Ok(())
+    }
+}
+
+fn seekable_input_stream(input: Input) -> std::io::Result<Box<dyn ReadWriteSeekSend>> {
+    match input {
+        Input::Stream(mut stream) => {
+            let mut buffer = Vec::new();
+            stream.read_to_end(&mut buffer)?;
+            Ok(Box::new(Cursor::new(buffer)))
+        }
+        Input::File(descriptor) => Ok(Box::new(SeekableDescriptor::new(descriptor))),
+    }
 }
 
 //TODO: Add more error handling
