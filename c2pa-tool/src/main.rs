@@ -2,9 +2,11 @@ mod bindings {
     wit_bindgen::generate!({
         world: "c2pa-tool",
         with: {
+            "wasi:clocks/wall-clock@0.2.2": generate,
             "wasi:io/streams@0.2.2": ::wasi::io::streams,
             "wasi:io/poll@0.2.2": ::wasi::io::poll,
             "wasi:io/error@0.2.2": ::wasi::io::error,
+            "wasi:filesystem/types@0.2.2": ::wasi::filesystem::types,
             "adobe:cai/manifest@0.1.0": generate,
             "adobe:cai/types@0.1.0": generate,
         },
@@ -12,7 +14,7 @@ mod bindings {
     });
 }
 
-use crate::bindings::adobe::cai::manifest::Reader;
+use crate::bindings::adobe::cai::manifest::{Input, Reader};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use std::io::Read;
@@ -32,13 +34,8 @@ fn main() -> Result<()> {
     let file_path = Path::new(&args.file);
 
     let file = open_file(file_path, OpenFlags::empty(), DescriptorFlags::READ)?;
-    let stats = file.stat()?;
-    eprintln!("file size {}", stats.size);
-    let stream = file
-        .read_via_stream(0)
-        .context("Failed to read file from stream")?;
-    let reader =
-        Reader::from_stream("image/jpeg", stream).context("Failed to read manifest from stream")?;
+    let reader = Reader::from_stream("image/jpeg", Input::File(file))
+        .context("Failed to read manifest from stream")?;
     /*
     let contents = read_file(file)?;
     let contents_str = std::str::from_utf8(&contents)?;

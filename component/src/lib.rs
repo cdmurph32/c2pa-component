@@ -4,11 +4,11 @@ mod bindings {
     wit_bindgen::generate!({
         world: "cai",
         with: {
+            "wasi:clocks/wall-clock@0.2.2": generate,
             "wasi:io/streams@0.2.2": ::wasi::io::streams,
             "wasi:io/poll@0.2.2": ::wasi::io::poll,
             "wasi:io/error@0.2.2": ::wasi::io::error,
-            "wasi:clocks/wall-clock@0.2.2": generate,
-            "wasi:filesystem/types@0.2.2": generate,
+            "wasi:filesystem/types@0.2.2": ::wasi::filesystem::types,
         },
         path: "../wit",
     });
@@ -26,7 +26,6 @@ use c2pa::{
 };
 use std::cell::RefCell;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
-use wasi::io::streams::OutputStream;
 
 trait ReadWriteSeekSend: Read + Write + Seek + Send {}
 
@@ -276,9 +275,10 @@ impl Read for SeekableDescriptor {
             .descriptor
             .read(length, self.position)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-        buf.copy_from_slice(&data);
-        self.position += length;
-        Ok(data.len())
+        let bytes_read = data.len();
+        buf[..bytes_read].copy_from_slice(&data);
+        self.position += bytes_read as u64;
+        Ok(bytes_read)
     }
 }
 
