@@ -1,0 +1,14 @@
+{
+  "name": "http-c2pa-wasm",
+  "description": "Simple c2pa service that prints a manifest",
+  "type": "module",
+  "scripts": {
+    "build": "jco componentize http-c2pa.js --wit ../wit/ --world-name c2pa-node --out c2pa-node.wasm",
+    "serve": "jco serve c2pa-node.wasm",
+    "all": "npm run build"
+  },
+  "devDependencies": {
+    "@bytecodealliance/componentize-js": "0.15.0",
+    "@bytecodealliance/jco": "^1.8.1"
+  }
+}

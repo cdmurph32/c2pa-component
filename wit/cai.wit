@@ -69,3 +69,9 @@ interface manifest {
 world c2pa-tool {
     import manifest;
 }
+
+world c2pa-node {
+    import manifest;
+    export wasi:http/incoming-handler@0.2.2;
+}
+
