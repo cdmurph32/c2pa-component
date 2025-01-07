@@ -3,8 +3,6 @@
  */
 
 import {
-  IncomingRequest,
-  ResponseOutparam,
   OutgoingBody,
   OutgoingResponse,
   Fields,
@@ -28,7 +26,8 @@ export const incomingHandler = {
    * serve web requests.
    */
   handle(incomingRequest, responseOutparam) {
-    const body = incomingRequest.consume();
+    const contentLength = incomingRequest.headers().get('content-length');
+    const body = incomingRequest.consume().stream().blockingRead(contentLength);
     const reader = new Reader(body);
 
     // Start building an outgoing response
@@ -52,7 +51,7 @@ export const incomingHandler = {
     // Finish the response body
     OutgoingBody.finish(outgoingBody, undefined);
     // Set the created response to an "OK" Result<T> value
-    ResponseOutparam.set(outgoingResponse, { tag: 'ok', val: outgoingResponse });
+    responseOutparam.set(outgoingResponse, { tag: 'ok', val: outgoingResponse });
   }
 
 };
