@@ -3,12 +3,14 @@
   "description": "Simple c2pa service that prints a manifest",
   "type": "module",
   "scripts": {
-    "build": "jco componentize http-c2pa.js --wit ../wit/ --world-name c2pa-node --out c2pa-node.wasm",
+    "build": "jco componentize http-c2pa.js --wit ../wit/ --world-name c2pa-node --out c2pa-node.wasm && wac plug c2pa-node.wasm --plug ../target/wasm32-wasip2/debug/c2pacomponent.wasm -o c2pa-node-fused.wasm",
+    "compile": "tsc",
     "serve": "jco serve c2pa-node.wasm",
     "all": "npm run build"
   },
   "devDependencies": {
     "@bytecodealliance/componentize-js": "0.15.0",
-    "@bytecodealliance/jco": "^1.8.1"
+    "@bytecodealliance/jco": "^1.8.1",
+    "typescript": "^5.7.3"
   }
 }
