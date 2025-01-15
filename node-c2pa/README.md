@@ -2,9 +2,9 @@
 
 This folder contains a WebAssembly Javascript component that uses [`wasi:http`][wasi-http] for enabling HTTP handlers in Javascript.
 
-It uses [`jco`][jco] to:
+It uses [`jco`](https://bytecodealliance.github.io/jco/) to:
 
-- Generate a WebAssembly component (via `jco componentize`) that can be executed by a WebAssembly runtime (ex. [`wasmtime serve`][wasmtime])
+- Generate a WebAssembly component (via `jco componentize`) that can be executed by a WebAssembly runtime (ex. [`wasmtime serve`](https://github.com/bytecodealliance/wasmtime))
 
 * [nodejs](https://nodejs.org)
 * [jco](https://bytecodealliance.github.io/jco/)
@@ -15,6 +15,12 @@ It uses [`jco`][jco] to:
 ## Build
 Build using npm and create composition with WAC.
 ```
+npm run compile
 npm run build
-wac plug c2pa-node.wasm --plug ../target/wasm32-wasip2/debug/c2pacomponent.wasm -o c2pa-node-fused.wasm
+```
+
+## IDE Compatibility
+Ensure typescript and typescript-language-server are globally installed
+```
+npm install -g typescript typescript-language-server
 ```
