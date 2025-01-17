@@ -59,6 +59,7 @@ interface manifest {
 
     resource reader {
         constructor(json: option<string>);
+        from-buffer: static func(format: string, buf: list<u8>) -> result<reader, error>;
         from-stream: static func(format: string, %stream: input) -> result<reader, error>;
         from-manifest-data-and-stream: static func(manifest-data: list<u8>, format: string, %stream: input) -> result<reader, error>;
         json: func() -> string;
@@ -74,4 +75,3 @@ world c2pa-node {
     import manifest;
     export wasi:http/incoming-handler@0.2.2;
 }
-

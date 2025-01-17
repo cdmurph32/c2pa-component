@@ -152,6 +152,13 @@ impl GuestReader for ComponentReader {
         }
     }
 
+    fn from_buffer(format: String, buf: Vec<u8>) -> Result<Reader, Error> {
+        let stream = Box::new(Cursor::new(buf));
+        Ok(Reader::new(ComponentReader {
+            reader: C2paReader::from_stream(&format, stream).unwrap().into(),
+        }))
+    }
+
     fn from_stream(format: String, stream: Input) -> Result<Reader, Error> {
         let seekable_stream =
             seekable_input_stream(stream).map_err(|e| Error::Io(e.to_string()))?;
