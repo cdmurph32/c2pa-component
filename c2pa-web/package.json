@@ -6,8 +6,11 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "transpile": "jco transpile ../target/wasm32-wasip2/release/c2pacomponent.wasm -o ./types --no-typescript",
     "bundle": "rollup -c",
-    "compile": "tsc"
+    "compile": "tsc",
+    "all": "npm run transpile && npm run compile && npm run bundle",
+    "start": "npm run all && http-server"
   },
   "keywords": [],
   "author": "",
@@ -16,10 +19,10 @@
     "@bytecodealliance/preview2-shim": "^0.17.1"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^28.0.2",
     "@rollup/plugin-node-resolve": "^16.0.0",
-    "@rollup/plugin-typescript": "^12.1.2",
     "rollup": "^4.30.1",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-dts": "^6.1.1",
     "tslib": "^2.8.1",
     "typescript": "^5.7.3"
   }

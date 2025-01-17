@@ -1,14 +1,30 @@
 import { nodeResolve } from '@rollup/plugin-node-resolve';
-//import commonjs from '@rollup/plugin-commonjs';
-import typescript from '@rollup/plugin-typescript';
+import dts from 'rollup-plugin-dts';
+import copy from 'rollup-plugin-copy';
 
-export default {
-  input: './types/c2pacomponent.js',
-  output: {
-    file: 'dist/bundle.js',
-    format: 'es',
-    sourcemap: true
-
+export default [
+  {
+    input: 'types/c2pacomponent.js',
+    output: {
+      file: 'types/bundle.js',
+      format: 'es',
+      sourcemap: true
+    },
+    plugins: [nodeResolve(),
+    copy({
+      targets: [
+        { src: 'types/c2pacomponent.core.wasm', dest: 'dist' },
+        { src: 'types/c2pacomponent.core2.wasm', dest: 'dist' }
+      ]
+    })
+    ]
   },
-  plugins: [nodeResolve(), typescript()]
-};
+  {
+    input: 'types/c2pacomponent.d.ts',
+    output: {
+      file: 'types/bundle.d.ts',
+      format: 'es'
+    },
+    plugins: [dts()]
+  }
+];

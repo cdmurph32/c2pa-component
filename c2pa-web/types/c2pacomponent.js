@@ -139,7 +139,7 @@ const captureTable1= new Map();
 let captureCnt1 = 0;
 handleTables[1] = handleTable1;
 
-function trampoline7(arg0) {
+function trampoline8(arg0) {
   var handle1 = arg0;
   var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
   var rsc0 = captureTable3.get(rep2);
@@ -3686,13 +3686,6 @@ let postReturn0;
 let postReturn1;
 let postReturn2;
 let postReturn3;
-let postReturn4;
-let postReturn5;
-let postReturn6;
-let postReturn7;
-let postReturn8;
-let postReturn9;
-let postReturn10;
 const handleTable12 = [T_FLAG, 0];
 const finalizationRegistry12 = finalizationRegistryCreate((handle) => {
   const { rep } = rscTableRemove(handleTable12, handle);
@@ -4235,7 +4228,7 @@ Builder.prototype.addIngredient = function addIngredient(arg1, arg2, arg3) {
     }
   }
   const retVal = variant24;
-  postReturn1(ret);
+  postReturn0(ret);
   if (typeof retVal === 'object' && retVal.tag === 'err') {
     throw new ComponentError(retVal.val);
   }
@@ -4480,7 +4473,7 @@ Builder.prototype.toArchive = function toArchive(arg1) {
     }
   }
   const retVal = variant22;
-  postReturn2(ret);
+  postReturn0(ret);
   if (typeof retVal === 'object' && retVal.tag === 'err') {
     throw new ComponentError(retVal.val);
   }
@@ -4731,7 +4724,7 @@ Builder.fromArchive = function fromArchive(arg0) {
     }
   }
   const retVal = variant22;
-  postReturn3(ret);
+  postReturn0(ret);
   if (typeof retVal === 'object' && retVal.tag === 'err') {
     throw new ComponentError(retVal.val);
   }
@@ -4992,7 +4985,7 @@ Reader.fromBuffer = function fromBuffer(arg0, arg1) {
     }
   }
   const retVal = variant21;
-  postReturn4(ret);
+  postReturn0(ret);
   if (typeof retVal === 'object' && retVal.tag === 'err') {
     throw new ComponentError(retVal.val);
   }
@@ -5245,7 +5238,7 @@ Reader.fromStream = function fromStream(arg0, arg1) {
     }
   }
   const retVal = variant23;
-  postReturn5(ret);
+  postReturn0(ret);
   if (typeof retVal === 'object' && retVal.tag === 'err') {
     throw new ComponentError(retVal.val);
   }
@@ -5503,7 +5496,7 @@ Reader.fromManifestDataAndStream = function fromManifestDataAndStream(arg0, arg1
     }
   }
   const retVal = variant24;
-  postReturn6(ret);
+  postReturn0(ret);
   if (typeof retVal === 'object' && retVal.tag === 'err') {
     throw new ComponentError(retVal.val);
   }
@@ -5521,7 +5514,7 @@ Reader.prototype.json = function json() {
   var len2 = dataView(memory0).getInt32(ret + 4, true);
   var result2 = utf8Decoder.decode(new Uint8Array(memory0.buffer, ptr2, len2));
   const retVal = result2;
-  postReturn7(ret);
+  postReturn1(ret);
   return retVal;
 };
 
@@ -5765,7 +5758,7 @@ Reader.prototype.resourceToStream = function resourceToStream(arg1, arg2) {
     }
   }
   const retVal = variant23;
-  postReturn8(ret);
+  postReturn2(ret);
   if (typeof retVal === 'object' && retVal.tag === 'err') {
     throw new ComponentError(retVal.val);
   }
@@ -5993,7 +5986,7 @@ function getManifestStore(arg0, arg1, arg2) {
     }
   }
   const retVal = variant22;
-  postReturn9(ret);
+  postReturn3(ret);
   if (typeof retVal === 'object' && retVal.tag === 'err') {
     throw new ComponentError(retVal.val);
   }
@@ -6226,15 +6219,13 @@ function getManifestStoreFromManifestAndAsset(arg0, arg1, arg2, arg3) {
     }
   }
   const retVal = variant23;
-  postReturn10(ret);
+  postReturn3(ret);
   if (typeof retVal === 'object' && retVal.tag === 'err') {
     throw new ComponentError(retVal.val);
   }
   return retVal.val;
 }
-const trampoline0 = rscTableCreateOwn.bind(null, handleTable12);
-const trampoline1 = rscTableCreateOwn.bind(null, handleTable13);
-function trampoline2(handle) {
+function trampoline0(handle) {
   const handleEntry = rscTableRemove(handleTable4, handle);
   if (handleEntry.own) {
     
@@ -6247,34 +6238,7 @@ function trampoline2(handle) {
     }
   }
 }
-function trampoline3(handle) {
-  const handleEntry = rscTableRemove(handleTable12, handle);
-  if (handleEntry.own) {
-    
-    exports0['23'](handleEntry.rep);
-  }
-}
-function trampoline4(handle) {
-  const handleEntry = rscTableRemove(handleTable13, handle);
-  if (handleEntry.own) {
-    
-    exports0['24'](handleEntry.rep);
-  }
-}
-function trampoline5(handle) {
-  const handleEntry = rscTableRemove(handleTable2, handle);
-  if (handleEntry.own) {
-    
-    const rsc = captureTable2.get(handleEntry.rep);
-    if (rsc) {
-      if (rsc[symbolDispose]) rsc[symbolDispose]();
-      captureTable2.delete(handleEntry.rep);
-    } else if (InputStream[symbolCabiDispose]) {
-      InputStream[symbolCabiDispose](handleEntry.rep);
-    }
-  }
-}
-function trampoline6(handle) {
+function trampoline1(handle) {
   const handleEntry = rscTableRemove(handleTable3, handle);
   if (handleEntry.own) {
     
@@ -6287,20 +6251,36 @@ function trampoline6(handle) {
     }
   }
 }
-function trampoline8(handle) {
-  const handleEntry = rscTableRemove(handleTable1, handle);
+const trampoline2 = rscTableCreateOwn.bind(null, handleTable12);
+const trampoline3 = rscTableCreateOwn.bind(null, handleTable13);
+function trampoline4(handle) {
+  const handleEntry = rscTableRemove(handleTable2, handle);
   if (handleEntry.own) {
     
-    const rsc = captureTable1.get(handleEntry.rep);
+    const rsc = captureTable2.get(handleEntry.rep);
     if (rsc) {
       if (rsc[symbolDispose]) rsc[symbolDispose]();
-      captureTable1.delete(handleEntry.rep);
-    } else if (Pollable[symbolCabiDispose]) {
-      Pollable[symbolCabiDispose](handleEntry.rep);
+      captureTable2.delete(handleEntry.rep);
+    } else if (InputStream[symbolCabiDispose]) {
+      InputStream[symbolCabiDispose](handleEntry.rep);
     }
   }
 }
-function trampoline10(handle) {
+function trampoline5(handle) {
+  const handleEntry = rscTableRemove(handleTable12, handle);
+  if (handleEntry.own) {
+    
+    exports0['23'](handleEntry.rep);
+  }
+}
+function trampoline6(handle) {
+  const handleEntry = rscTableRemove(handleTable13, handle);
+  if (handleEntry.own) {
+    
+    exports0['24'](handleEntry.rep);
+  }
+}
+function trampoline7(handle) {
   const handleEntry = rscTableRemove(handleTable0, handle);
   if (handleEntry.own) {
     
@@ -6310,6 +6290,19 @@ function trampoline10(handle) {
       captureTable0.delete(handleEntry.rep);
     } else if (Error$1[symbolCabiDispose]) {
       Error$1[symbolCabiDispose](handleEntry.rep);
+    }
+  }
+}
+function trampoline10(handle) {
+  const handleEntry = rscTableRemove(handleTable1, handle);
+  if (handleEntry.own) {
+    
+    const rsc = captureTable1.get(handleEntry.rep);
+    if (rsc) {
+      if (rsc[symbolDispose]) rsc[symbolDispose]();
+      captureTable1.delete(handleEntry.rep);
+    } else if (Pollable[symbolCabiDispose]) {
+      Pollable[symbolCabiDispose](handleEntry.rep);
     }
   }
 }
@@ -6399,39 +6392,39 @@ const $init = (() => {
     ({ exports: exports0 } = yield instantiateCore(yield module2));
     ({ exports: exports1 } = yield instantiateCore(yield module0, {
       '[export]adobe:cai/manifest@0.1.0': {
-        '[resource-drop]builder': trampoline3,
-        '[resource-drop]reader': trampoline4,
-        '[resource-new]builder': trampoline0,
-        '[resource-new]reader': trampoline1,
+        '[resource-drop]builder': trampoline5,
+        '[resource-drop]reader': trampoline6,
+        '[resource-new]builder': trampoline2,
+        '[resource-new]reader': trampoline3,
       },
       'wasi:filesystem/types@0.2.2': {
         '[method]descriptor.read': exports0['0'],
         '[method]descriptor.sync': exports0['2'],
         '[method]descriptor.write': exports0['1'],
-        '[resource-drop]descriptor': trampoline2,
+        '[resource-drop]descriptor': trampoline0,
       },
       'wasi:io/error@0.2.2': {
         '[method]error.to-debug-string': exports0['6'],
-        '[resource-drop]error': trampoline10,
+        '[resource-drop]error': trampoline7,
       },
       'wasi:io/poll@0.2.0': {
-        '[resource-drop]pollable': trampoline8,
+        '[resource-drop]pollable': trampoline10,
       },
       'wasi:io/poll@0.2.2': {
         '[method]pollable.block': trampoline9,
-        '[resource-drop]pollable': trampoline8,
+        '[resource-drop]pollable': trampoline10,
       },
       'wasi:io/streams@0.2.0': {
-        '[resource-drop]input-stream': trampoline5,
-        '[resource-drop]output-stream': trampoline6,
+        '[resource-drop]input-stream': trampoline4,
+        '[resource-drop]output-stream': trampoline1,
       },
       'wasi:io/streams@0.2.2': {
         '[method]input-stream.blocking-read': exports0['3'],
         '[method]output-stream.check-write': exports0['4'],
-        '[method]output-stream.subscribe': trampoline7,
+        '[method]output-stream.subscribe': trampoline8,
         '[method]output-stream.write': exports0['5'],
-        '[resource-drop]input-stream': trampoline5,
-        '[resource-drop]output-stream': trampoline6,
+        '[resource-drop]input-stream': trampoline4,
+        '[resource-drop]output-stream': trampoline1,
       },
       'wasi:sockets/tcp@0.2.0': {
         '[resource-drop]tcp-socket': trampoline14,
@@ -6516,12 +6509,12 @@ const $init = (() => {
         '[method]descriptor.stat': exports0['35'],
         '[method]descriptor.unlink-file-at': exports0['30'],
         '[method]descriptor.write-via-stream': exports0['32'],
-        '[resource-drop]descriptor': trampoline2,
+        '[resource-drop]descriptor': trampoline0,
         '[resource-drop]directory-entry-stream': trampoline16,
         'filesystem-error-code': exports0['27'],
       },
       'wasi:io/error@0.2.0': {
-        '[resource-drop]error': trampoline10,
+        '[resource-drop]error': trampoline7,
       },
       'wasi:io/streams@0.2.0': {
         '[method]input-stream.blocking-read': exports0['38'],
@@ -6530,8 +6523,8 @@ const $init = (() => {
         '[method]output-stream.blocking-write-and-flush': exports0['42'],
         '[method]output-stream.check-write': exports0['39'],
         '[method]output-stream.write': exports0['40'],
-        '[resource-drop]input-stream': trampoline5,
-        '[resource-drop]output-stream': trampoline6,
+        '[resource-drop]input-stream': trampoline4,
+        '[resource-drop]output-stream': trampoline1,
       },
       'wasi:random/random@0.2.0': {
         'get-random-bytes': exports0['43'],
@@ -6593,17 +6586,10 @@ const $init = (() => {
         '9': exports2.fd_filestat_get,
       },
     }));
-    postReturn0 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[method]builder.add-resource'];
-    postReturn1 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[method]builder.add-ingredient'];
-    postReturn2 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[method]builder.to-archive'];
-    postReturn3 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[static]builder.from-archive'];
-    postReturn4 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[static]reader.from-buffer'];
-    postReturn5 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[static]reader.from-stream'];
-    postReturn6 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[static]reader.from-manifest-data-and-stream'];
-    postReturn7 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[method]reader.json'];
-    postReturn8 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[method]reader.resource-to-stream'];
-    postReturn9 = exports1['cabi_post_adobe:cai/manifest@0.1.0#get-manifest-store'];
-    postReturn10 = exports1['cabi_post_adobe:cai/manifest@0.1.0#get-manifest-store-from-manifest-and-asset'];
+    postReturn0 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[method]builder.add-ingredient'];
+    postReturn1 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[method]reader.json'];
+    postReturn2 = exports1['cabi_post_adobe:cai/manifest@0.1.0#[method]reader.resource-to-stream'];
+    postReturn3 = exports1['cabi_post_adobe:cai/manifest@0.1.0#get-manifest-store'];
   })();
   let promise, resolve, reject;
   function runNext (value) {

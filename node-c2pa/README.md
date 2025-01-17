@@ -1,10 +1,9 @@
 # C2PA Node Component
 
-This folder contains a WebAssembly Javascript component that uses [`wasi:http`][wasi-http] for enabling HTTP handlers in Javascript.
+This folder contains a WebAssembly Javascript component that uses [`wasi:http`][wasi-http] for enabling HTTP handlers in Node JS.
 
-It uses [`jco`](https://bytecodealliance.github.io/jco/) to:
-
-- Generate a WebAssembly component (via `jco componentize`) that can be executed by a WebAssembly runtime (ex. [`wasmtime serve`](https://github.com/bytecodealliance/wasmtime))
+It was created with jco using the types from the `c2pa-node` world in `cai.wit`. 
+`jco types wit -n c2pa-node -o node-c2pa/types`
 
 * [nodejs](https://nodejs.org)
 * [jco](https://bytecodealliance.github.io/jco/)
