@@ -12,9 +12,7 @@ It was created with jco by transpiling the `cai` component into JS.
 Build using npm and serve with http-server
 
 ```
-npm run bundle
-npm run compile
-http-server
+npm run start
 ```
 
 ## IDE Compatibility
