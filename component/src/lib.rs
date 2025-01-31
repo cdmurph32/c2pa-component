@@ -21,9 +21,7 @@ use crate::bindings::exports::adobe::cai::{
     types::Error,
 };
 use bindings::exports::adobe::cai::types::Descriptor;
-use c2pa::{
-    settings, Builder as C2paBuilder, Error as C2paError, ManifestStore, Reader as C2paReader,
-};
+use c2pa::{Builder as C2paBuilder, Error as C2paError, Reader as C2paReader};
 use std::cell::RefCell;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
@@ -34,31 +32,6 @@ impl<T: Read + Write + Seek + Send> ReadWriteSeekSend for T {}
 pub struct Manifest;
 
 impl Guest for Manifest {
-    fn get_manifest_store(
-        data: Vec<u8>,
-        mime_type: String,
-        settings: Option<String>,
-    ) -> Result<Vec<u8>, Error> {
-        let result = get_manifest_store_data(&data, &mime_type, settings.as_deref()).unwrap();
-        Ok(serde_json::to_vec(&result).unwrap())
-    }
-
-    fn get_manifest_store_from_manifest_and_asset(
-        manifest: Vec<u8>,
-        asset: Vec<u8>,
-        mime_type: String,
-        settings: Option<String>,
-    ) -> Result<Vec<u8>, Error> {
-        let result = get_manifest_store_data_from_manifest_and_asset_bytes(
-            &manifest,
-            &mime_type,
-            &asset,
-            settings.as_deref(),
-        )
-        .unwrap();
-        Ok(serde_json::to_vec(&result).unwrap())
-    }
-
     type Builder = ComponentBuilder;
     type Reader = ComponentReader;
 }
@@ -213,29 +186,6 @@ impl GuestReader for ComponentReader {
     }
 }
 
-pub fn get_manifest_store_data(
-    data: &[u8],
-    mime_type: &str,
-    settings: Option<&str>,
-) -> Result<ManifestStore, Error> {
-    if let Some(settings) = settings {
-        settings::load_settings_from_str(settings, "json").unwrap();
-    }
-    Ok(ManifestStore::from_bytes(mime_type, data, true).unwrap())
-}
-
-pub fn get_manifest_store_data_from_manifest_and_asset_bytes(
-    manifest_bytes: &[u8],
-    format: &str,
-    asset_bytes: &[u8],
-    settings: Option<&str>,
-) -> Result<ManifestStore, Error> {
-    if let Some(settings) = settings {
-        settings::load_settings_from_str(settings, "json").unwrap();
-    }
-    Ok(ManifestStore::from_manifest_and_asset_bytes(manifest_bytes, format, asset_bytes).unwrap())
-}
-
 fn add_seek_to_read<R: Read>(mut reader: R) -> std::io::Result<Cursor<Vec<u8>>> {
     let mut buffer = Vec::new();
     reader.read_to_end(&mut buffer)?;
@@ -328,7 +278,7 @@ impl From<C2paError> for Error {
             C2paError::AssertionMissing { url } => {
                 Error::AssertionNotFound(format!("Assertion missing, url {url}"))
             }
-            C2paError::AssertionEncoding => Error::Assertion("Encode failed".to_string()),
+            C2paError::AssertionEncoding(err) => Error::Assertion(err.to_string()),
             C2paError::AssertionDecoding(err) => Error::Assertion(format!("Decode failed {err}")),
             C2paError::OtherError(err) => Error::Other(err.to_string()),
             C2paError::UnsupportedType => {

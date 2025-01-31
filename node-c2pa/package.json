@@ -3,7 +3,7 @@
   "description": "Simple c2pa service that prints a manifest",
   "type": "module",
   "scripts": {
-    "build": "jco componentize dist/http-c2pa.js --wit ../wit/ --world-name c2pa-node --out c2pa-node.wasm && wac plug c2pa-node.wasm --plug ../target/wasm32-wasip2/debug/c2pacomponent.wasm -o c2pa-node-fused.wasm",
+    "build": "jco componentize dist/http-c2pa.js --wit ../wit/ --world-name c2pa-node --out c2pa-node.wasm && wac plug c2pa-node.wasm --plug ../target/wasm32-wasip2/release/c2pacomponent.wasm -o c2pa-node-fused.wasm",
     "compile": "tsc",
     "serve": "jco serve c2pa-node-fused.wasm",
     "all": "npm run compile && npm run build"
