@@ -1,4 +1,4 @@
-# C2PA Compoent
+# C2PA Component
 
 ## Build Prerequisites
 * [WASI SDK](https://github.com/WebAssembly/wasi-sdk) installed.
