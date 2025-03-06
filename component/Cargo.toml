@@ -1,6 +1,5 @@
 [package]
-# TODO: rename c2pa-component
-name = "c2pacomponent"
+name = "c2pa-component"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,11 +7,13 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-wit-bindgen = { version = "0.34", features = ["default"] }
-c2pa = { git = "https://github.com/contentauth/c2pa-rs.git", branch = "wasm32-wasi_0.41.0"}
-wasi = "0.13.3+wasi-0.2.2"
+c2pa = { git = "https://github.com/contentauth/c2pa-rs.git", branch = "main", features = ["file_io"]}
+pem = "3.0.4"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0.103", features = ["arbitrary_precision"] }
+tempfile = "=3.15.0"
+wasi = "0.14.1"
+wit-bindgen = { version = "0.39", features = ["default"] }
 
 [package.metadata.component.target]
 path = "../wit"

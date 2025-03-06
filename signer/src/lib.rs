@@ -1,0 +1,35 @@
+mod bindings {
+    use crate::C2paSigner;
+
+    wit_bindgen::generate!({
+        world: "signer",
+        with: {
+            "wasi:clocks/wall-clock@0.2.2": generate,
+            "wasi:io/streams@0.2.2": ::wasi::io::streams,
+            "wasi:io/poll@0.2.2": ::wasi::io::poll,
+            "wasi:io/error@0.2.2": ::wasi::io::error,
+            "wasi:filesystem/types@0.2.2": ::wasi::filesystem::types,
+        },
+        path: "../wit",
+    });
+
+    export!(C2paSigner);
+}
+
+use bindings::exports::adobe::cai::{c2pa_signer::Guest, types::Error};
+use ecdsa::signature::Signer;
+use p256::ecdsa::{Signature, SigningKey};
+
+pub struct C2paSigner;
+
+const PRIVATE_KEY: &[u8] = include_bytes!("../certs/es256.pem");
+
+impl Guest for C2paSigner {
+    fn sign(data: Vec<u8>) -> Result<Vec<u8>, Error> {
+        let private_key =
+            SigningKey::from_slice(PRIVATE_KEY).map_err(|e| Error::RawSigner(e.to_string()))?;
+
+        let signature: Signature = Signer::<Signature>::sign(&private_key, &data);
+        Ok(signature.to_vec())
+    }
+}

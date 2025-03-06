@@ -7,14 +7,14 @@ mod bindings {
             "wasi:io/poll@0.2.2": ::wasi::io::poll,
             "wasi:io/error@0.2.2": ::wasi::io::error,
             "wasi:filesystem/types@0.2.2": ::wasi::filesystem::types,
-            "adobe:cai/manifest@0.1.0": generate,
+            "adobe:cai/c2pa@0.1.0": generate,
             "adobe:cai/types@0.1.0": generate,
         },
         path: "../wit",
     });
 }
 
-use crate::bindings::adobe::cai::manifest::{Input, Reader};
+use crate::bindings::adobe::cai::c2pa::{Input, Reader};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use std::io::Read;

@@ -1,8 +1,24 @@
 package adobe:cai@0.1.0;
 
 world cai {
-    export manifest;
+    export c2pa;
     export types;
+
+    import c2pa-signer;
+}
+
+world signer {
+    export c2pa-signer;
+    export types;
+}
+
+world c2pa-tool {
+    import c2pa;
+}
+
+world c2pa-webserver {
+    import c2pa;
+    export wasi:http/incoming-handler@0.2.2;
 }
 
 interface types {
@@ -22,6 +38,7 @@ interface types {
         manifest-not-found(string),
         not-supported(string),
         other(string),
+        raw-signer(string),
         remote-manifest(string),
         resource-not-found(string),
         rw-lock,
@@ -39,11 +56,31 @@ interface types {
         %stream(output-stream)
     }
 
+    variant signing-algorithm {
+        ps256,
+        ps384,
+        ps512,
+        ed25519,
+        es256,
+        es384,
+    }
+
+    record signer-config {
+        algorithm: signing-algorithm,
+        certs: list<u8>,
+        reserve-size: u64,
+        tsa-url: option<string>,
+    }
 }
 
-interface manifest {
+interface c2pa-signer {
+    use types.{error};
+    sign: func(data: list<u8>) -> result<list<u8>, error>;
+}
+
+interface c2pa {
     use wasi:io/streams@0.2.2.{input-stream, output-stream};
-    use types.{error, input, output};
+    use types.{error, input, signer-config, output, signing-algorithm};
 
     resource builder {
         constructor(json: option<string>);
@@ -52,6 +89,7 @@ interface manifest {
         add-ingredient: func(ingredient-json: string, format: string, %stream: input) -> result<_, error>;
         to-archive: func(%stream: output) -> result<_, error>;
         from-archive: static func(%stream: input) -> result<builder, error>;
+        sign: func(config: signer-config, format: string, source: input, dest: output) -> result<list<u8>, error>;
     }
 
     resource reader {
@@ -62,13 +100,4 @@ interface manifest {
         json: func() -> string;
         resource-to-stream: func(uri: string, %stream: output) -> result<u64, error>;
     }
-}
-
-world c2pa-tool {
-    import manifest;
-}
-
-world c2pa-node {
-    import manifest;
-    export wasi:http/incoming-handler@0.2.2;
 }

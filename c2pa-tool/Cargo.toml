@@ -5,11 +5,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-c2pacomponent = { path = "../component" }
 clap = { version = "4.5.20", features = ["derive"] }
-wit-bindgen = { version = "0.34", features = ["default"] }
-wit-bindgen-rt = { version = "0.34.0", features = ["bitflags"] }
-wasi = "0.13.3+wasi-0.2.2"
+wit-bindgen = { version = "0.39", features = ["default"] }
+wit-bindgen-rt = { version = "0.39.0", features = ["bitflags"] }
+wasi = "0.14.1"
 
 [profile.release]
 codegen-units = 1

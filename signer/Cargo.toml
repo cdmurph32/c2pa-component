@@ -1,0 +1,20 @@
+[package]
+name = "signer"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ecdsa = { version = "0.16.9", features = ["digest", "sha2"] }
+p256 = "0.13.2"
+wasi = "0.14.1"
+wit-bindgen = { version = "0.39", features = ["default"] }
+
+[package.metadata.component.target]
+path = "../wit"
+world = "signer"
+
+[package.metadata.component.target.dependencies]
+"wasi:io" = { path = "../wit/deps/io" }

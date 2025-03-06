@@ -16,12 +16,11 @@ mod bindings {
     export!(Manifest);
 }
 
-use crate::bindings::exports::adobe::cai::{
-    manifest::{Builder, Guest, GuestBuilder, GuestReader, Input, Output, Reader},
-    types::Error,
+use bindings::exports::adobe::cai::{
+    c2pa::{Builder, Guest, GuestBuilder, GuestReader, Input, Output, Reader, SignerConfig},
+    types::{Descriptor, Error, SigningAlgorithm},
 };
-use bindings::exports::adobe::cai::types::Descriptor;
-use c2pa::{Builder as C2paBuilder, Error as C2paError, Reader as C2paReader};
+use c2pa::{Builder as C2paBuilder, Error as C2paError, Reader as C2paReader, Signer, SigningAlg};
 use std::cell::RefCell;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
@@ -88,7 +87,8 @@ impl GuestBuilder for ComponentBuilder {
             Output::Stream(mut stream) => {
                 let mut seekable_stream = Cursor::new(Vec::new());
                 self.builder.borrow_mut().to_archive(&mut seekable_stream)?;
-                seekable_stream.set_position(0); // Reset cursor to the beginning
+                // Reset cursor to the beginning
+                seekable_stream.set_position(0);
                 std::io::copy(&mut seekable_stream, &mut stream)
                     .map_err(|e| Error::Io(e.to_string()))?;
                 Ok(())
@@ -104,10 +104,63 @@ impl GuestBuilder for ComponentBuilder {
     fn from_archive(stream: Input) -> Result<Builder, Error> {
         let seekable_stream = seekable_input_stream(stream).unwrap();
         let component_builder = ComponentBuilder {
-            //TODO pass error
-            builder: C2paBuilder::from_archive(seekable_stream).unwrap().into(),
+            builder: C2paBuilder::from_archive(seekable_stream)?.into(),
         };
         Ok(Builder::new(component_builder))
+    }
+
+    fn sign(
+        &self,
+        config: SignerConfig,
+        format: String,
+        source: Input,
+        dest: Output,
+    ) -> Result<Vec<u8>, Error> {
+        let mut input_stream = seekable_input_stream(source)?;
+        let (mut output_stream, original_output_stream) = seekable_output_stream(dest)?;
+        let signer = C2paSignerBinding::new(config);
+        let manifest = self
+            .builder
+            .borrow_mut()
+            .sign(&signer, &format, &mut input_stream, &mut output_stream)
+            .map_err(Error::from)?;
+        if let Some(Output::Stream(mut original_stream)) = original_output_stream {
+            output_stream.seek(std::io::SeekFrom::Start(0))?;
+            std::io::copy(&mut output_stream, &mut original_stream)
+                .map_err(|e| Error::Io(e.to_string()))?;
+        }
+        Ok(manifest)
+    }
+}
+
+struct C2paSignerBinding {
+    config: SignerConfig,
+}
+
+impl C2paSignerBinding {
+    fn new(config: SignerConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl Signer for C2paSignerBinding {
+    fn sign(&self, data: &[u8]) -> Result<Vec<u8>, c2pa::Error> {
+        bindings::adobe::cai::c2pa_signer::sign(data)
+            .map_err(|e| c2pa::Error::OtherError(Box::new(e)))
+    }
+
+    fn alg(&self) -> c2pa::SigningAlg {
+        self.config.algorithm.into()
+    }
+
+    fn certs(&self) -> c2pa::Result<Vec<Vec<u8>>> {
+        let pems = pem::parse_many(&self.config.certs)
+            .map_err(|e| c2pa::Error::OtherError(Box::new(e)))?;
+        Ok(pems.into_iter().map(|p| p.into_contents()).collect())
+    }
+
+    fn reserve_size(&self) -> usize {
+        self.config.reserve_size as usize
     }
 }
 
@@ -126,17 +179,18 @@ impl GuestReader for ComponentReader {
     }
 
     fn from_buffer(format: String, buf: Vec<u8>) -> Result<Reader, Error> {
-        let stream = Box::new(Cursor::new(buf));
+        let input_stream = Box::new(Cursor::new(buf));
         Ok(Reader::new(ComponentReader {
-            reader: C2paReader::from_stream(&format, stream).unwrap().into(),
+            reader: C2paReader::from_stream(&format, input_stream)
+                .unwrap()
+                .into(),
         }))
     }
 
     fn from_stream(format: String, stream: Input) -> Result<Reader, Error> {
-        let seekable_stream =
-            seekable_input_stream(stream).map_err(|e| Error::Io(e.to_string()))?;
+        let input_stream = seekable_input_stream(stream).map_err(|e| Error::Io(e.to_string()))?;
         Ok(Reader::new(ComponentReader {
-            reader: C2paReader::from_stream(&format, seekable_stream)?.into(),
+            reader: C2paReader::from_stream(&format, input_stream)?.into(),
         }))
     }
 
@@ -145,51 +199,35 @@ impl GuestReader for ComponentReader {
         format: String,
         stream: Input,
     ) -> Result<Reader, Error> {
-        let seekable_stream = seekable_input_stream(stream).unwrap();
-        //TODO pass error
+        let input_stream = seekable_input_stream(stream).unwrap();
         Ok(Reader::new(ComponentReader {
             reader: C2paReader::from_manifest_data_and_stream(
                 &manifest_bytes,
                 &format,
-                seekable_stream,
-            )
-            .unwrap()
+                input_stream,
+            )?
             .into(),
         }))
     }
 
-    fn resource_to_stream(&self, uri: String, stream: Output) -> Result<u64, Error> {
-        match stream {
-            Output::Stream(mut stream) => {
-                let mut seekable_stream = Cursor::new(Vec::new());
-                self.reader
-                    .borrow_mut()
-                    .resource_to_stream(&uri, &mut seekable_stream)?;
-                seekable_stream.set_position(0); // Reset cursor to the beginning
-                let bytes_written = std::io::copy(&mut seekable_stream, &mut stream)
-                    .map_err(|e| Error::Io(e.to_string()))?;
-                Ok(bytes_written)
-            }
-            Output::File(descriptor) => {
-                let mut seekable_stream = SeekableDescriptor::new(descriptor);
-                let bytes_written = self
-                    .reader
-                    .borrow_mut()
-                    .resource_to_stream(&uri, &mut seekable_stream)?;
-                Ok(bytes_written as u64)
-            }
+    fn resource_to_stream(&self, uri: String, output: Output) -> Result<u64, Error> {
+        let (mut output_stream, original_output_stream) = seekable_output_stream(output)?;
+        let bytes_written = self
+            .reader
+            .borrow_mut()
+            .resource_to_stream(&uri, &mut *output_stream)?;
+        // If we are writing to stream, copy the output to the given output stream.
+        if let Some(Output::Stream(mut original_stream)) = original_output_stream {
+            output_stream.seek(std::io::SeekFrom::Start(0))?;
+            std::io::copy(&mut output_stream, &mut original_stream)
+                .map_err(|e| Error::Io(e.to_string()))?;
         }
+        Ok(bytes_written as u64)
     }
 
     fn json(&self) -> String {
         self.reader.borrow_mut().json()
     }
-}
-
-fn add_seek_to_read<R: Read>(mut reader: R) -> std::io::Result<Cursor<Vec<u8>>> {
-    let mut buffer = Vec::new();
-    reader.read_to_end(&mut buffer)?;
-    Ok(Cursor::new(buffer))
 }
 
 struct SeekableDescriptor {
@@ -268,7 +306,18 @@ fn seekable_input_stream(input: Input) -> std::io::Result<Box<dyn ReadWriteSeekS
     }
 }
 
-//TODO: Add more error handling
+fn seekable_output_stream(
+    output: Output,
+) -> std::io::Result<(Box<dyn ReadWriteSeekSend>, Option<Output>)> {
+    match output {
+        Output::Stream(stream) => Ok((
+            Box::new(Cursor::new(Vec::new())),
+            Some(Output::Stream(stream)),
+        )),
+        Output::File(descriptor) => Ok((Box::new(SeekableDescriptor::new(descriptor)), None)),
+    }
+}
+
 impl From<C2paError> for Error {
     fn from(e: C2paError) -> Self {
         match e {
@@ -285,6 +334,25 @@ impl From<C2paError> for Error {
                 Error::NotSupported("File type is not supported".to_string())
             }
             _ => Error::Other(format!("Unknown error: {e}")),
+        }
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::Io(e.to_string())
+    }
+}
+
+impl From<SigningAlgorithm> for SigningAlg {
+    fn from(algorithm: SigningAlgorithm) -> Self {
+        match algorithm {
+            SigningAlgorithm::Ps256 => SigningAlg::Ps256,
+            SigningAlgorithm::Ps384 => SigningAlg::Ps384,
+            SigningAlgorithm::Ps512 => SigningAlg::Ps512,
+            SigningAlgorithm::Ed25519 => SigningAlg::Ed25519,
+            SigningAlgorithm::Es256 => SigningAlg::Es256,
+            SigningAlgorithm::Es384 => SigningAlg::Es384,
         }
     }
 }
