@@ -1,3 +1,4 @@
+#![allow(unsafe_op_in_unsafe_fn)]
 mod bindings {
     use crate::C2paSigner;
 
@@ -22,7 +23,7 @@ use p256::ecdsa::{Signature, SigningKey};
 
 pub struct C2paSigner;
 
-const PRIVATE_KEY: &[u8] = include_bytes!("../certs/es256.pem");
+const PRIVATE_KEY: &[u8] = include_bytes!("../../fixtures/certs/es256.pem");
 
 impl Guest for C2paSigner {
     fn sign(data: Vec<u8>) -> Result<Vec<u8>, Error> {

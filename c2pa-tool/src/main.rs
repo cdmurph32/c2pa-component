@@ -14,11 +14,11 @@ mod bindings {
     });
 }
 
-use crate::bindings::adobe::cai::c2pa::{Input, Reader};
+use crate::bindings::adobe::cai::c2pa::{Builder, Input, Reader, SignerConfig};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use wasi::filesystem::preopens::get_directories;
 use wasi::filesystem::types::{Descriptor, DescriptorFlags, OpenFlags, PathFlags};
 use wasi::io::streams::{InputStream, StreamError};
@@ -26,7 +26,19 @@ use wasi::io::streams::{InputStream, StreamError};
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    file: String,
+    file: PathBuf,
+
+    /// Path to manifest definition JSON file.
+    #[clap(short, long, requires = "output")]
+    manifest: Option<PathBuf>,
+
+    /// Path to output file or folder.
+    #[clap(short, long)]
+    output: PathBuf,
+
+    /// Manifest definition passed as a JSON string.
+    #[clap(short, long, conflicts_with = "manifest")]
+    config: Option<String>,
 }
 
 fn main() -> Result<()> {
@@ -36,13 +48,35 @@ fn main() -> Result<()> {
     let file = open_file(file_path, OpenFlags::empty(), DescriptorFlags::READ)?;
     let reader = Reader::from_stream("image/jpeg", Input::File(file))
         .context("Failed to read manifest from stream")?;
-    /*
-    let contents = read_file(file)?;
-    let contents_str = std::str::from_utf8(&contents)?;
-    let reader = Reader::new(Some(contents_str));
-    */
+
+    if args.manifest.is_some() || args.config.is_some() {
+        // read the json from file or config, and get base path if from file
+        let (json, base_path) = match args.manifest.as_deref() {
+            Some(manifest_path) => {
+                let base_path = std::fs::canonicalize(manifest_path)?
+                    .parent()
+                    .map(|p| p.to_path_buf());
+                (std::fs::read_to_string(manifest_path)?, base_path)
+            }
+            None => (
+                args.config.unwrap_or_default(),
+                std::env::current_dir().ok(),
+            ),
+        };
+        let mut sign_config = SignerConfig::from_json(&json)?;
+        let manifest_def = serde_json::from_slice(json.as_bytes())?;
+        let mut builder = Builder::new(Some(&json));
+        let mut manifest = manifest_def.manifest;
+    }
+
     eprintln!("{}", reader.json());
     Ok(())
+}
+
+impl SignerConfig {
+    pub fn from_json(json: &str) -> Result<Self> {
+        serde_json::from_str(json).context("reading manifest configuration")
+    }
 }
 
 fn get_dir(path: impl AsRef<Path>) -> Result<Descriptor> {

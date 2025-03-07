@@ -440,6 +440,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "serde",
+ "serde_json",
  "wasi 0.14.1+wasi-0.2.3",
  "wit-bindgen",
  "wit-bindgen-rt",

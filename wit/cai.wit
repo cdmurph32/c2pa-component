@@ -65,11 +65,269 @@ interface types {
         es384,
     }
 
+    variant assertion-type {
+        json,
+        cbor,
+    }
+
+    variant uri-or-resource {
+        hashed-uri(hashed-uri),
+        resource-ref(resource-ref),
+    }
+
+    record region-of-interest {
+        region: list<range>,
+        name: option<string>,
+        identifier: option<string>,
+        region-type: option<string>,
+        role: option<role>,
+        description: option<string>,
+        metadata: option<string>,// Self referential, no Box<> in wit
+    }
+
+    record metadata {
+        reviews: option<list<review-rating>>,
+        date-time: option<string>,
+        reference: option<hashed-uri>,
+        data-source: option<data-source>,
+        region-of-interest: option<region-of-interest>,
+        other: list<tuple<string, string>>,
+    }
+
+    record manifest-definition {
+        claim-version: option<u8>,
+        vendor: option<string>,
+        claim-generator-info: list<claim-generator-info>,
+        metadata: option<list<metadata>>,
+        title: option<string>,
+        format: string,
+        instance-id: string,
+        thumbnail: option<resource-ref>,
+        ingredients: list<ingredient>,
+        assertions: list<assertion-definition>,
+        redactions: option<list<string>>,
+        label: option<string>,
+    }
+
+    record manifest-file {
+        manifest: manifest-definition,
+        ingredients: option<list<string>>,
+    }
+
+    record claim-generator-info {
+        name: string,
+        version: option<string>,
+        icon: option<uri-or-resource>,
+        operating-system: option<string>,
+        other: list<tuple<string, string>>,
+    }
+
     record signer-config {
-        algorithm: signing-algorithm,
-        certs: list<u8>,
+        alg: signing-algorithm,
+        sign-cert: list<u8>,
         reserve-size: u64,
-        tsa-url: option<string>,
+        ts-url: option<string>,
+    }
+
+    record hashed-uri {
+        url: string,
+        alg: option<string>,
+        hash: list<u8>,
+        salt: option<list<u8>>,
+    }
+
+    record resource-ref {
+        format: string,
+        identifier: string,
+        data-types: option<list<asset-type>>,
+        alg: option<string>,
+        hash: option<list<u8>>,
+    }
+
+    record asset-type {
+        %type: string,
+        version: option<string>,
+    }
+
+    record review-rating {
+        explanation: string,
+        code: option<string>,
+        value: u8,
+    }
+
+    record coordinate {
+        x: f64,
+        y: f64,
+    }
+
+    enum shape-type {
+        rectangle,
+        circle,
+        polygon,
+    }
+
+    enum unit-type {
+        pixel,
+        percent,
+    }
+
+    record shape {
+        shape-type: shape-type,
+        unit: unit-type,
+        origin: coordinate,
+        width: option<f64>,
+        height: option<f64>,
+        inside: option<bool>,
+        vertices: option<list<coordinate>>,
+    }
+
+    enum time-type {
+        npt,
+    }
+
+    record time {
+        time-type: time-type,
+        start: option<string>,
+        end: option<string>,
+    }
+
+    record frame {
+        start: option<s32>,
+        end: option<s32>,
+    }
+
+    record text-selector {
+        fragment: string,
+        start: option<s32>,
+        end: option<s32>,
+    }
+
+    record text-selector-range {
+        selector: text-selector,
+        end: option<text-selector>,
+    }
+
+    record text {
+        selectors: list<text-selector-range>,
+    }
+
+    record item {
+        identifier: string,
+        value: string,
+    }
+
+    enum range-type {
+        spatial,
+        temporal,
+        frame,
+        textual,
+        identified,
+    }
+
+    record range {
+        range-type: range-type,
+        shape: option<shape>,
+        time: option<time>,
+        frame: option<frame>,
+        text: option<text>,
+        item: option<item>,
+    }
+
+    enum role {
+        area-of-interest,
+        cropped,
+        edited,
+        placed,
+        redacted,
+        subject-area,
+        deleted,
+        styled,
+        watermarked,
+    }
+
+    record ingredient {
+        title: option<string>,
+        format: option<string>,
+        document-id: option<string>,
+        instance-id: option<string>,
+        provenance: option<string>,
+        thumbnail: option<resource-ref>,
+        hash: option<string>,
+        relationship: relationship,
+        active-manifest: option<string>,
+        validation-status: option<list<validation-status>>,
+        validation-results: option<validation-results>,
+        data: option<resource-ref>,
+        description: option<string>,
+        informational-uri: option<string>,
+        metadata: option<metadata>,
+        data-types: option<list<asset-type>>,
+        manifest-data: option<resource-ref>,
+        resources: resource-store,
+    }
+
+    enum relationship {
+        parent-of,
+        component-of,
+        input-to,
+    }
+
+    record validation-status {
+        code: string,
+        url: option<string>,
+        explanation: option<string>,
+        success: option<bool>,
+        kind: log-kind,
+        ingredient-uri: option<string>,
+    }
+
+    enum log-kind {
+        success,
+        informational,
+        failure,
+    }
+
+    record validation-results {
+        active-manifest: option<status-codes>,
+        ingredient-deltas: option<list<ingredient-delta-validation-result>>,
+    }
+
+    record ingredient-delta-validation-result {
+        ingredient-assertion-uri: string,
+        validation-deltas: status-codes,
+    }
+
+    record status-codes {
+        success: list<validation-status>,
+        informational: list<validation-status>,
+        failure: list<validation-status>,
+    }
+
+    record resource-store {
+        resources: list<tuple<string, list<u8>>>,
+        base-path: option<string>,
+        label: option<string>,
+    }
+
+    record assertion-definition {
+        label: string,
+        data: assertion-data,
+    }
+
+    enum assertion-data {
+        cbor,
+        json,
+    }
+
+    record data-source {
+        source-type: string,
+        details: option<string>,
+        actors: option<list<actor>>,
+    }
+
+    record actor {
+        identifier: option<string>,
+        credentials: option<list<hashed-uri>>,
     }
 }
 
@@ -80,13 +338,15 @@ interface c2pa-signer {
 
 interface c2pa {
     use wasi:io/streams@0.2.2.{input-stream, output-stream};
-    use types.{error, input, signer-config, output, signing-algorithm};
+    use types.{assertion-type, error, input, signer-config, output, signing-algorithm};
 
     resource builder {
         constructor(json: option<string>);
-        add-resource: func(uri: string, %stream: input) -> result<_, error>;
         set-remote-url: func(url: string);
+        set-no-embed: func(embed: bool);
+        add-assertion: func(label: string, assertion: string, kind:option<assertion-type>) -> result<_, error>;
         add-ingredient: func(ingredient-json: string, format: string, %stream: input) -> result<_, error>;
+        add-resource: func(uri: string, %stream: input) -> result<_, error>;
         to-archive: func(%stream: output) -> result<_, error>;
         from-archive: static func(%stream: input) -> result<builder, error>;
         sign: func(config: signer-config, format: string, source: input, dest: output) -> result<list<u8>, error>;

@@ -18,7 +18,7 @@ mod bindings {
 
 use bindings::exports::adobe::cai::{
     c2pa::{Builder, Guest, GuestBuilder, GuestReader, Input, Output, Reader, SignerConfig},
-    types::{Descriptor, Error, SigningAlgorithm},
+    types::{AssertionType, Descriptor, Error, SigningAlgorithm},
 };
 use c2pa::{Builder as C2paBuilder, Error as C2paError, Reader as C2paReader, Signer, SigningAlg};
 use std::cell::RefCell;
@@ -51,18 +51,36 @@ impl GuestBuilder for ComponentBuilder {
 
     fn add_resource(&self, uri: String, stream: Input) -> Result<(), Error> {
         let seekable_stream = seekable_input_stream(stream).unwrap();
-        match self
-            .builder
+        self.builder
             .borrow_mut()
-            .add_resource(&uri, seekable_stream)
-        {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e.into()),
-        }
+            .add_resource(&uri, seekable_stream)?;
+        Ok(())
     }
 
     fn set_remote_url(&self, url: String) {
         self.builder.borrow_mut().set_remote_url(url);
+    }
+
+    fn set_no_embed(&self, embed: bool) {
+        self.builder.borrow_mut().set_no_embed(embed);
+    }
+
+    fn add_assertion(
+        &self,
+        label: String,
+        assertion: String,
+        kind: Option<AssertionType>,
+    ) -> Result<(), Error> {
+        if let Some(AssertionType::Json) = kind {
+            self.builder
+                .borrow_mut()
+                .add_assertion_json(&label, &assertion)?;
+        } else {
+            self.builder
+                .borrow_mut()
+                .add_assertion(&label, &assertion)?;
+        }
+        Ok(())
     }
 
     fn add_ingredient(
@@ -72,33 +90,22 @@ impl GuestBuilder for ComponentBuilder {
         stream: Input,
     ) -> Result<(), Error> {
         let mut seekable_stream = seekable_input_stream(stream).unwrap();
-        match self.builder.borrow_mut().add_ingredient_from_stream(
+        self.builder.borrow_mut().add_ingredient_from_stream(
             &ingredient_json,
             &format,
             &mut seekable_stream,
-        ) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e.into()),
-        }
+        )?;
+        Ok(())
     }
 
     fn to_archive(&self, stream: Output) -> Result<(), Error> {
-        match stream {
-            Output::Stream(mut stream) => {
-                let mut seekable_stream = Cursor::new(Vec::new());
-                self.builder.borrow_mut().to_archive(&mut seekable_stream)?;
-                // Reset cursor to the beginning
-                seekable_stream.set_position(0);
-                std::io::copy(&mut seekable_stream, &mut stream)
-                    .map_err(|e| Error::Io(e.to_string()))?;
-                Ok(())
-            }
-            Output::File(descriptor) => {
-                let seekable_stream = SeekableDescriptor::new(descriptor);
-                self.builder.borrow_mut().to_archive(seekable_stream)?;
-                Ok(())
-            }
+        let (mut output_stream, original_output_stream) = seekable_output_stream(stream)?;
+        self.builder.borrow_mut().to_archive(&mut output_stream)?;
+        if let Some(Output::Stream(mut original_stream)) = original_output_stream {
+            output_stream.seek(std::io::SeekFrom::Start(0))?;
+            std::io::copy(&mut output_stream, &mut original_stream)?;
         }
+        Ok(())
     }
 
     fn from_archive(stream: Input) -> Result<Builder, Error> {
@@ -119,15 +126,15 @@ impl GuestBuilder for ComponentBuilder {
         let mut input_stream = seekable_input_stream(source)?;
         let (mut output_stream, original_output_stream) = seekable_output_stream(dest)?;
         let signer = C2paSignerBinding::new(config);
-        let manifest = self
-            .builder
-            .borrow_mut()
-            .sign(&signer, &format, &mut input_stream, &mut output_stream)
-            .map_err(Error::from)?;
+        let manifest = self.builder.borrow_mut().sign(
+            &signer,
+            &format,
+            &mut input_stream,
+            &mut output_stream,
+        )?;
         if let Some(Output::Stream(mut original_stream)) = original_output_stream {
             output_stream.seek(std::io::SeekFrom::Start(0))?;
-            std::io::copy(&mut output_stream, &mut original_stream)
-                .map_err(|e| Error::Io(e.to_string()))?;
+            std::io::copy(&mut output_stream, &mut original_stream)?;
         }
         Ok(manifest)
     }
@@ -150,11 +157,11 @@ impl Signer for C2paSignerBinding {
     }
 
     fn alg(&self) -> c2pa::SigningAlg {
-        self.config.algorithm.into()
+        self.config.alg.into()
     }
 
     fn certs(&self) -> c2pa::Result<Vec<Vec<u8>>> {
-        let pems = pem::parse_many(&self.config.certs)
+        let pems = pem::parse_many(&self.config.sign_cert)
             .map_err(|e| c2pa::Error::OtherError(Box::new(e)))?;
         Ok(pems.into_iter().map(|p| p.into_contents()).collect())
     }
@@ -188,7 +195,7 @@ impl GuestReader for ComponentReader {
     }
 
     fn from_stream(format: String, stream: Input) -> Result<Reader, Error> {
-        let input_stream = seekable_input_stream(stream).map_err(|e| Error::Io(e.to_string()))?;
+        let input_stream = seekable_input_stream(stream)?;
         Ok(Reader::new(ComponentReader {
             reader: C2paReader::from_stream(&format, input_stream)?.into(),
         }))
@@ -219,8 +226,7 @@ impl GuestReader for ComponentReader {
         // If we are writing to stream, copy the output to the given output stream.
         if let Some(Output::Stream(mut original_stream)) = original_output_stream {
             output_stream.seek(std::io::SeekFrom::Start(0))?;
-            std::io::copy(&mut output_stream, &mut original_stream)
-                .map_err(|e| Error::Io(e.to_string()))?;
+            std::io::copy(&mut output_stream, &mut original_stream)?;
         }
         Ok(bytes_written as u64)
     }
