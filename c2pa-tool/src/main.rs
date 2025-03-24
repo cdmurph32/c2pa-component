@@ -11,14 +11,22 @@ mod bindings {
             "adobe:cai/types@0.1.0": generate,
         },
         path: "../wit",
+        additional_derives: [serde::Serialize, serde::Deserialize],
+        additional_derives_ignore: ["output", "input"],
     });
 }
 
-use crate::bindings::adobe::cai::c2pa::{Builder, Input, Reader, SignerConfig};
+use crate::bindings::adobe::cai::{
+    c2pa::{format_from_path, Builder, Input, ManifestDefinition, Output, Reader, SignerConfig},
+    types::SigningAlgorithm,
+};
 use anyhow::{anyhow, Context, Result};
+use base64::prelude::*;
 use clap::Parser;
+use serde::Deserialize;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use wasi::cli::stdout::get_stdout;
 use wasi::filesystem::preopens::get_directories;
 use wasi::filesystem::types::{Descriptor, DescriptorFlags, OpenFlags, PathFlags};
 use wasi::io::streams::{InputStream, StreamError};
@@ -29,16 +37,16 @@ struct Args {
     file: PathBuf,
 
     /// Path to manifest definition JSON file.
-    #[clap(short, long, requires = "output")]
+    #[clap(short, long, requires = "config")]
     manifest: Option<PathBuf>,
 
     /// Path to output file or folder.
     #[clap(short, long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
 
     /// Manifest definition passed as a JSON string.
-    #[clap(short, long, conflicts_with = "manifest")]
-    config: Option<String>,
+    #[clap(short, long)]
+    config: Option<PathBuf>,
 }
 
 fn main() -> Result<()> {
@@ -46,33 +54,86 @@ fn main() -> Result<()> {
     let file_path = Path::new(&args.file);
 
     let file = open_file(file_path, OpenFlags::empty(), DescriptorFlags::READ)?;
-    let reader = Reader::from_stream("image/jpeg", Input::File(file))
-        .context("Failed to read manifest from stream")?;
 
-    if args.manifest.is_some() || args.config.is_some() {
+    if args.manifest.is_some() {
         // read the json from file or config, and get base path if from file
-        let (json, base_path) = match args.manifest.as_deref() {
-            Some(manifest_path) => {
-                let base_path = std::fs::canonicalize(manifest_path)?
-                    .parent()
-                    .map(|p| p.to_path_buf());
-                (std::fs::read_to_string(manifest_path)?, base_path)
+        let manifest_json = args
+            .manifest
+            .as_deref()
+            .ok_or(anyhow!("Manifest path is missing"))
+            .and_then(|manifest_path| {
+                open_file(manifest_path, OpenFlags::empty(), DescriptorFlags::READ)
+            })
+            .and_then(read_file_to_string)?;
+        let sign_config: SignerConfig = args
+            .config
+            .as_deref()
+            .ok_or(anyhow!("Config path is missing"))
+            .and_then(|config_path| {
+                open_file(config_path, OpenFlags::empty(), DescriptorFlags::READ)
+            })
+            .and_then(read_file_to_string)
+            .and_then(|json| {
+                let signer_config: SignerConfigFile =
+                    serde_json::from_str(&json).map_err(|e| anyhow!(e))?;
+                signer_config.try_into()
+            })?;
+        let format = format_from_path(args.file.to_str().ok_or(anyhow!("Invalid file path"))?)
+            .ok_or(anyhow!("Could not determine format"))?;
+        let output = match args.output {
+            Some(output) => {
+                let output_file = open_file(&output, OpenFlags::CREATE, DescriptorFlags::WRITE)?;
+                Output::File(output_file)
             }
-            None => (
-                args.config.unwrap_or_default(),
-                std::env::current_dir().ok(),
-            ),
+            // If no output is specified, then write to STDOUT
+            None => Output::Stream(get_stdout()),
         };
-        let mut sign_config = SignerConfig::from_json(&json)?;
-        let manifest_def = serde_json::from_slice(json.as_bytes())?;
-        let mut builder = Builder::new(Some(&json));
-        let mut manifest = manifest_def.manifest;
+        let builder = Builder::new(Some(&manifest_json));
+        builder.sign(&sign_config, &format, Input::File(file), output)?;
+    } else {
+        let reader = Reader::from_stream("image/jpeg", Input::File(file))
+            .context("Failed to read manifest from stream")?;
+        println!("{}", reader.json());
     }
-
-    eprintln!("{}", reader.json());
     Ok(())
 }
 
+#[derive(serde::Deserialize)]
+struct SignerConfigFile {
+    pub alg: SigningAlgorithm,
+    pub cert_base64: String,
+    pub reserve_size: u64,
+    pub ts_url: Option<String>,
+}
+
+impl TryFrom<SignerConfigFile> for SignerConfig {
+    type Error = anyhow::Error;
+
+    fn try_from(config_file: SignerConfigFile) -> Result<Self, Self::Error> {
+        let sign_cert = BASE64_STANDARD
+            .decode(&config_file.cert_base64)
+            .map_err(|e| anyhow!("Failed to decode cert base64: {}", e))?;
+        let alg = config_file.alg;
+        let reserve_size = config_file.reserve_size;
+        let ts_url = config_file.ts_url;
+
+        Ok(SignerConfig {
+            alg,
+            sign_cert,
+            reserve_size,
+            ts_url,
+        })
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+struct ManifestFile {
+    manifest: ManifestDefinition,
+    ingredients: Option<Vec<String>>,
+}
+
+#[allow(dead_code)]
 impl SignerConfig {
     pub fn from_json(json: &str) -> Result<Self> {
         serde_json::from_str(json).context("reading manifest configuration")
@@ -128,6 +189,17 @@ fn read_file(dir: Descriptor) -> Result<Vec<u8>> {
     InputStreamReader::from(&mut body)
         .read_to_end(&mut buf)
         .map_err(|e| anyhow!("Failed to read file: {}", e))?;
+    Ok(buf)
+}
+
+fn read_file_to_string(dir: Descriptor) -> Result<String, anyhow::Error> {
+    let mut body = dir
+        .read_via_stream(0)
+        .map_err(|e| anyhow!("Failed to read file: {}", e))?;
+    let mut buf = String::new();
+    InputStreamReader::from(&mut body)
+        .read_to_string(&mut buf)
+        .map_err(|e| anyhow!("Failed to read file to string: {}", e))?;
     Ok(buf)
 }
 

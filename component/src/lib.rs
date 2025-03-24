@@ -11,6 +11,10 @@ mod bindings {
             "wasi:filesystem/types@0.2.2": ::wasi::filesystem::types,
         },
         path: "../wit",
+
+
+        additional_derives: [serde::Serialize, serde::Deserialize],
+        additional_derives_ignore: ["output", "input"],
     });
 
     export!(Manifest);
@@ -18,11 +22,12 @@ mod bindings {
 
 use bindings::exports::adobe::cai::{
     c2pa::{Builder, Guest, GuestBuilder, GuestReader, Input, Output, Reader, SignerConfig},
-    types::{AssertionType, Descriptor, Error, SigningAlgorithm},
+    types::{AssertionType, Descriptor, Error, ManifestDefinition, SigningAlgorithm},
 };
 use c2pa::{Builder as C2paBuilder, Error as C2paError, Reader as C2paReader, Signer, SigningAlg};
 use std::cell::RefCell;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::path::Path;
 
 trait ReadWriteSeekSend: Read + Write + Seek + Send {}
 
@@ -31,6 +36,10 @@ impl<T: Read + Write + Seek + Send> ReadWriteSeekSend for T {}
 pub struct Manifest;
 
 impl Guest for Manifest {
+    fn format_from_path(path: String) -> Option<String> {
+        c2pa::format_from_path(Path::new(&path))
+    }
+
     type Builder = ComponentBuilder;
     type Reader = ComponentReader;
 }
@@ -233,6 +242,18 @@ impl GuestReader for ComponentReader {
 
     fn json(&self) -> String {
         self.reader.borrow_mut().json()
+    }
+    fn active_manifest(&self) -> Option<ManifestDefinition> {
+        if let Some(active_manifest) = self.reader.borrow_mut().active_manifest() {
+            // Convert from Manifest in the SDK to type defined in wit.
+            // Serialize the active manifest to JSON
+            let json = serde_json::to_string(&active_manifest).unwrap();
+            // Deserialize the JSON back into ManifestDefinition
+            let manifest_definition: ManifestDefinition = serde_json::from_str(&json).unwrap();
+            Some(manifest_definition)
+        } else {
+            None
+        }
     }
 }
 

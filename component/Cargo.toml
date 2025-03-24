@@ -7,13 +7,14 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-c2pa = { git = "https://github.com/contentauth/c2pa-rs.git", branch = "main", features = ["file_io"]}
+c2pa = { version = "0.47.0", features = ["file_io"]}
+flate2 = "1.1"
 pem = "3.0.4"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0.103", features = ["arbitrary_precision"] }
 tempfile = "=3.15.0"
 wasi = "0.14.1"
-wit-bindgen = { version = "0.39", features = ["default"] }
+wit-bindgen = { version = "0.41", features = ["default"] }
 
 [package.metadata.component.target]
 path = "../wit"

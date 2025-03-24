@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "transpile": "jco transpile ../target/wasm32-wasip2/release/c2pacomponent.wasm -o ./types --no-typescript",
+    "transpile": "cargo build --release && jco transpile ../target/wasm32-wasip2/release/c2pa_component.wasm -o ./types --no-typescript",
     "bundle": "rollup -c",
     "compile": "tsc",
     "all": "npm run transpile && npm run compile && npm run bundle",
