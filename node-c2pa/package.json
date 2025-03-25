@@ -9,7 +9,7 @@
     "all": "npm run compile && npm run build"
   },
   "devDependencies": {
-    "@bytecodealliance/componentize-js": "0.15.0",
+    "@bytecodealliance/componentize-js": "0.18.0",
     "@bytecodealliance/jco": "^1.10.2",
     "typescript": "^5.8.2"
   }
