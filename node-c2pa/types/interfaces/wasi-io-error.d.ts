@@ -1,8 +1,10 @@
-export namespace WasiIoError {
-  export { Error };
-}
+/** @module Interface wasi:io/error@0.2.2 **/
 
 export class Error {
+  /**
+   * This type does not have a public constructor.
+   */
+  private constructor();
   /**
   * Returns a string that is suitable to assist humans in debugging
   * this error.

@@ -13,7 +13,11 @@ export WASI_SDK_PATH=/opt/wasi-sdk CC=/opt/wasi-sdk/bin/clang
 cargo +nightly build --target wasm32-wasip2 && wac plug target/wasm32-wasip2/debug/c2pa_component.wasm --plug target/wasm32-wasip2/debug/signer.wasm -o c2pa_component.wasm && wac plug target/wasm32-wasip2/debug/c2pa-tool.wasm --plug c2pa_component.wasm -o c2pa-tool.wasm
 ```
 
-Run the example with
+Run the manifest read example with
 ```
-wasmtime -S common --dir . ./c2pa-tool.wasm -- ./image_with_c2pa_data.jpg
+wasmtime -S common --dir . ./c2pa-tool.wasm -- fixtures/CA.jpg 
+```
+Run the building and signing example with
+```
+wasmtime -S cli -S http --dir . --dir signer --dir fixtures c2pa-tool.wasm fixtures/CA.jpg --config signer/signer_config.json --manifest fixtures/manifest_data.json --output ./CA_signer.jpeg
 ```

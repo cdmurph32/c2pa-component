@@ -1,28 +1,21 @@
-export namespace WasiFilesystemTypes {
-  export { Descriptor };
-  export { DirectoryEntryStream };
-  /**
-   * Attempts to extract a filesystem-related `error-code` from the stream
-   * `error` provided.
-   * 
-   * Stream operations which return `stream-error::last-operation-failed`
-   * have a payload with more information about the operation that failed.
-   * This payload can be passed through to this function to see if there's
-   * filesystem-related information about the error to return.
-   * 
-   * Note that this function is fallible because not all stream-related
-   * errors are filesystem-related errors.
-   */
-  export function filesystemErrorCode(err: Error): ErrorCode | undefined;
-}
-import type { InputStream } from './wasi-io-streams.js';
-export { InputStream };
-import type { OutputStream } from './wasi-io-streams.js';
-export { OutputStream };
-import type { Error } from './wasi-io-streams.js';
-export { Error };
-import type { Datetime } from './wasi-clocks-wall-clock.js';
-export { Datetime };
+/** @module Interface wasi:filesystem/types@0.2.2 **/
+/**
+ * Attempts to extract a filesystem-related `error-code` from the stream
+ * `error` provided.
+ * 
+ * Stream operations which return `stream-error::last-operation-failed`
+ * have a payload with more information about the operation that failed.
+ * This payload can be passed through to this function to see if there's
+ * filesystem-related information about the error to return.
+ * 
+ * Note that this function is fallible because not all stream-related
+ * errors are filesystem-related errors.
+ */
+export function filesystemErrorCode(err: Error): ErrorCode | undefined;
+export type InputStream = import('./wasi-io-streams.js').InputStream;
+export type OutputStream = import('./wasi-io-streams.js').OutputStream;
+export type Error = import('./wasi-io-streams.js').Error;
+export type Datetime = import('./wasi-clocks-wall-clock.js').Datetime;
 /**
  * File size or length of a region within a file.
  */
@@ -396,6 +389,10 @@ export interface MetadataHashValue {
 
 export class Descriptor {
   /**
+   * This type does not have a public constructor.
+   */
+  private constructor();
+  /**
   * Return a stream for reading from a file, if available.
   * 
   * May fail with an error-code describing why the file cannot be read.
@@ -641,12 +638,12 @@ export class Descriptor {
   * 
   * Implementations are encourated to provide the following properties:
   * 
-  * - If the file is not modified or replaced, the computed hash value should
-  * usually not change.
-  * - If the object is modified or replaced, the computed hash value should
-  * usually change.
-  * - The inputs to the hash should not be easily computable from the
-  * computed hash.
+  *  - If the file is not modified or replaced, the computed hash value should
+  *    usually not change.
+  *  - If the object is modified or replaced, the computed hash value should
+  *    usually change.
+  *  - The inputs to the hash should not be easily computable from the
+  *    computed hash.
   * 
   * However, none of these is required.
   */
@@ -661,6 +658,10 @@ export class Descriptor {
 }
 
 export class DirectoryEntryStream {
+  /**
+   * This type does not have a public constructor.
+   */
+  private constructor();
   /**
   * Read a single directory entry from a `directory-entry-stream`.
   */

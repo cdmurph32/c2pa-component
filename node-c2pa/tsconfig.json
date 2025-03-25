@@ -31,7 +31,8 @@
     "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
     "paths": {
       "wasi:http/types@0.2.2": ["types/interfaces/wasi-http-types"],
-      "adobe:cai/manifest@0.1.0": ["types/interfaces/adobe-cai-manifest", "types/interfaces/adobe-cai-types"]
+      "adobe:cai/c2pa@0.1.0": ["types/interfaces/adobe-cai-c2pa"],
+      "adobe:cai/types@0.1.0": ["types/interfaces/adobe-cai-types"]
     },
     // "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
     // "typeRoots": [],                                  /* Specify multiple folders that act like './node_modules/@types'. */

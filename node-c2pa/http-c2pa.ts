@@ -6,7 +6,8 @@ import {
   ResponseOutparam,
 } from "wasi:http/types@0.2.2";
 
-import { Reader, InputStream } from "adobe:cai/manifest@0.1.0";
+import { Reader } from "adobe:cai/c2pa@0.1.0";
+import { InputStream } from "adobe:cai/types@0.1.0";
 
 /**
  * This export represents the `wasi:http/incoming-handler` interface,
