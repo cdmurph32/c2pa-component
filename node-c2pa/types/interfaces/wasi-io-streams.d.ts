@@ -1,4 +1,4 @@
-/** @module Interface wasi:io/streams@0.2.3 **/
+/** @module Interface wasi:io/streams@0.2.4 **/
 export type Error = import('./wasi-io-error.js').Error;
 export type Pollable = import('./wasi-io-poll.js').Pollable;
 /**

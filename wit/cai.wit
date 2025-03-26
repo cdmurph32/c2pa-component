@@ -18,7 +18,7 @@ world c2pa-tool {
 
 world c2pa-webserver {
     import c2pa;
-    export wasi:http/incoming-handler@0.2.3;
+    export wasi:http/incoming-handler@0.2.4;
 }
 
 interface c2pa-signer {
@@ -27,7 +27,7 @@ interface c2pa-signer {
 }
 
 interface c2pa {
-    use wasi:io/streams@0.2.3.{input-stream, output-stream};
+    use wasi:io/streams@0.2.4.{input-stream, output-stream};
     use types.{assertion-type, error, input, manifest-definition, output, signer-config, signing-algorithm};
 
 

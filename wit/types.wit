@@ -1,8 +1,8 @@
 package adobe:cai@0.1.0;
 
 interface types {
-    use wasi:io/streams@0.2.3.{input-stream, output-stream};
-    use wasi:filesystem/types@0.2.3.{descriptor};
+    use wasi:io/streams@0.2.4.{input-stream, output-stream};
+    use wasi:filesystem/types@0.2.4.{descriptor};
 
     variant error {
         assertion(string),

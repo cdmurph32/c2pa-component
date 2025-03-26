@@ -1,4 +1,4 @@
-/** @module Interface wasi:io/poll@0.2.3 **/
+/** @module Interface wasi:io/poll@0.2.4 **/
 /**
  * Poll for completion on a set of pollables.
  * 

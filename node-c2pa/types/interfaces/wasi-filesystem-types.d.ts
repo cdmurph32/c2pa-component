@@ -1,4 +1,4 @@
-/** @module Interface wasi:filesystem/types@0.2.3 **/
+/** @module Interface wasi:filesystem/types@0.2.4 **/
 /**
  * Attempts to extract a filesystem-related `error-code` from the stream
  * `error` provided.
@@ -559,6 +559,10 @@ export class Descriptor {
   setTimesAt(pathFlags: PathFlags, path: string, dataAccessTimestamp: NewTimestamp, dataModificationTimestamp: NewTimestamp): void;
   /**
   * Create a hard link.
+  * 
+  * Fails with `error-code::no-entry` if the old path does not exist,
+  * with `error-code::exist` if the new path already exists, and
+  * `error-code::not-permitted` if the old path is not a file.
   * 
   * Note: This is similar to `linkat` in POSIX.
   */

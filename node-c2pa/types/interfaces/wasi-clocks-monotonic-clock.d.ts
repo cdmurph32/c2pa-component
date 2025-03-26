@@ -1,4 +1,4 @@
-/** @module Interface wasi:clocks/monotonic-clock@0.2.3 **/
+/** @module Interface wasi:clocks/monotonic-clock@0.2.4 **/
 /**
  * Read the current value of the clock.
  * 
