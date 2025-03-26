@@ -6,10 +6,11 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "transpile": "cargo build --release && jco transpile ../target/wasm32-wasip2/release/c2pa_component.wasm -o ./types --no-typescript",
+    "build": "cargo build --release && wac plug ../target/wasm32-wasip2/release/c2pa_component.wasm --plug ../target/wasm32-wasip2/release/signer.wasm -o c2pa_component.wasm",
+    "transpile": "jco transpile c2pa_component.wasm -o ./types --no-typescript",
     "bundle": "rollup -c",
     "compile": "tsc",
-    "all": "npm run transpile && npm run compile && npm run bundle",
+    "all": "npm run build && npm run transpile && npm run compile && npm run bundle",
     "start": "npm run all && http-server"
   },
   "keywords": [],

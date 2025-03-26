@@ -1,5 +1,3 @@
-export namespace WasiCliTerminalStdin {
-  export function getTerminalStdin(): TerminalInput | undefined;
-}
-import type { TerminalInput } from './wasi-cli-terminal-input.js';
-export { TerminalInput };
+/** @module Interface wasi:cli/terminal-stdin@0.2.4 **/
+export function getTerminalStdin(): TerminalInput | undefined;
+export type TerminalInput = import('./wasi-cli-terminal-input.js').TerminalInput;

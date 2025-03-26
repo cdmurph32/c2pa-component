@@ -1,4 +1,4 @@
-import { manifest } from "../types/bundle.js";
+import { c2pa } from "../types/bundle.js";
 
 const dropArea = document.getElementById("drop-area") as HTMLElement;
 const manifestDiv = document.getElementById("manifest") as HTMLElement;
@@ -26,10 +26,7 @@ dropArea.addEventListener("drop", (event) => {
 async function processFile(file: File): Promise<void> {
   try {
     const image = await file.arrayBuffer();
-    const reader = manifest.Reader.fromBuffer(
-      "image/jpeg",
-      new Uint8Array(image),
-    );
+    const reader = c2pa.Reader.fromBuffer("image/jpeg", new Uint8Array(image));
     manifestDiv.textContent = reader.json();
   } catch (error) {
     console.error("Error:", error);

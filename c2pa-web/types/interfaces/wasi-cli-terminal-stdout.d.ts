@@ -1,5 +1,3 @@
-export namespace WasiCliTerminalStdout {
-  export function getTerminalStdout(): TerminalOutput | undefined;
-}
-import type { TerminalOutput } from './wasi-cli-terminal-output.js';
-export { TerminalOutput };
+/** @module Interface wasi:cli/terminal-stdout@0.2.4 **/
+export function getTerminalStdout(): TerminalOutput | undefined;
+export type TerminalOutput = import('./wasi-cli-terminal-output.js').TerminalOutput;

@@ -1,5 +1,3 @@
-export namespace WasiCliStdin {
-  export function getStdin(): InputStream;
-}
-import type { InputStream } from './wasi-io-streams.js';
-export { InputStream };
+/** @module Interface wasi:cli/stdin@0.2.4 **/
+export function getStdin(): InputStream;
+export type InputStream = import('./wasi-io-streams.js').InputStream;

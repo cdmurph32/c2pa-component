@@ -1,4 +1,3 @@
-export namespace WasiClocksMonotonicClock {
-  export function now(): Instant;
-}
+/** @module Interface wasi:clocks/monotonic-clock@0.2.4 **/
+export function now(): Instant;
 export type Instant = bigint;

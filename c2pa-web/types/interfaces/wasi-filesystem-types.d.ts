@@ -1,8 +1,5 @@
-export namespace WasiFilesystemTypes {
-  export { Descriptor };
-  export function filesystemErrorCode(err: Error): ErrorCode | undefined;
-  export { DirectoryEntryStream };
-}
+/** @module Interface wasi:filesystem/types@0.2.4 **/
+export function filesystemErrorCode(err: Error): ErrorCode | undefined;
 export type Filesize = bigint;
 /**
  * # Variants
@@ -82,10 +79,8 @@ export type Filesize = bigint;
  * ## `"cross-device"`
  */
 export type ErrorCode = 'access' | 'would-block' | 'already' | 'bad-descriptor' | 'busy' | 'deadlock' | 'quota' | 'exist' | 'file-too-large' | 'illegal-byte-sequence' | 'in-progress' | 'interrupted' | 'invalid' | 'io' | 'is-directory' | 'loop' | 'too-many-links' | 'message-size' | 'name-too-long' | 'no-device' | 'no-entry' | 'no-lock' | 'insufficient-memory' | 'insufficient-space' | 'not-directory' | 'not-empty' | 'not-recoverable' | 'unsupported' | 'no-tty' | 'no-such-device' | 'overflow' | 'not-permitted' | 'pipe' | 'read-only' | 'invalid-seek' | 'text-file-busy' | 'cross-device';
-import type { InputStream } from './wasi-io-streams.js';
-export { InputStream };
-import type { OutputStream } from './wasi-io-streams.js';
-export { OutputStream };
+export type InputStream = import('./wasi-io-streams.js').InputStream;
+export type OutputStream = import('./wasi-io-streams.js').OutputStream;
 /**
  * # Variants
  * 
@@ -107,8 +102,7 @@ export { OutputStream };
  */
 export type DescriptorType = 'unknown' | 'block-device' | 'character-device' | 'directory' | 'fifo' | 'symbolic-link' | 'regular-file' | 'socket';
 export type LinkCount = bigint;
-import type { Datetime } from './wasi-clocks-wall-clock.js';
-export { Datetime };
+export type Datetime = import('./wasi-clocks-wall-clock.js').Datetime;
 export interface DescriptorStat {
   type: DescriptorType,
   linkCount: LinkCount,
@@ -138,10 +132,13 @@ export interface MetadataHashValue {
   lower: bigint,
   upper: bigint,
 }
-import type { Error } from './wasi-io-streams.js';
-export { Error };
+export type Error = import('./wasi-io-streams.js').Error;
 
 export class Descriptor {
+  /**
+   * This type does not have a public constructor.
+   */
+  private constructor();
   readViaStream(offset: Filesize): InputStream;
   writeViaStream(offset: Filesize): OutputStream;
   appendViaStream(): OutputStream;
@@ -149,12 +146,19 @@ export class Descriptor {
   read(length: Filesize, offset: Filesize): [Uint8Array, boolean];
   write(buffer: Uint8Array, offset: Filesize): Filesize;
   sync(): void;
+  createDirectoryAt(path: string): void;
   stat(): DescriptorStat;
+  statAt(pathFlags: PathFlags, path: string): DescriptorStat;
   openAt(pathFlags: PathFlags, path: string, openFlags: OpenFlags, flags: DescriptorFlags): Descriptor;
   renameAt(oldPath: string, newDescriptor: Descriptor, newPath: string): void;
   unlinkFileAt(path: string): void;
   metadataHash(): MetadataHashValue;
+  metadataHashAt(pathFlags: PathFlags, path: string): MetadataHashValue;
 }
 
 export class DirectoryEntryStream {
+  /**
+   * This type does not have a public constructor.
+   */
+  private constructor();
 }
