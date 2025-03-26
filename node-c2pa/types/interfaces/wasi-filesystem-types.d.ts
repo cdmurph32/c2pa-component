@@ -1,4 +1,4 @@
-/** @module Interface wasi:filesystem/types@0.2.2 **/
+/** @module Interface wasi:filesystem/types@0.2.3 **/
 /**
  * Attempts to extract a filesystem-related `error-code` from the stream
  * `error` provided.
@@ -418,7 +418,7 @@ export class Descriptor {
   * May fail with an error-code describing why the file cannot be appended.
   * 
   * Note: This allows using `write-stream`, which is similar to `write` with
-  * `O_APPEND` in in POSIX.
+  * `O_APPEND` in POSIX.
   */
   appendViaStream(): OutputStream;
   /**
@@ -636,7 +636,7 @@ export class Descriptor {
   * replaced. It may also include a secret value chosen by the
   * implementation and not otherwise exposed.
   * 
-  * Implementations are encourated to provide the following properties:
+  * Implementations are encouraged to provide the following properties:
   * 
   *  - If the file is not modified or replaced, the computed hash value should
   *    usually not change.

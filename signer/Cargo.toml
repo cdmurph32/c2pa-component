@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 ecdsa = { version = "0.16.9", features = ["digest", "sha2"] }
 p256 = "0.13.2"
 wasi = "0.14.1"
-wit-bindgen = { version = "0.39", features = ["default"] }
+wit-bindgen = { version = "0.41", features = ["default"] }
 
 [package.metadata.component.target]
 path = "../wit"

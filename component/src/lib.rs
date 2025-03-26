@@ -4,11 +4,11 @@ mod bindings {
     wit_bindgen::generate!({
         world: "cai",
         with: {
-            "wasi:clocks/wall-clock@0.2.2": generate,
-            "wasi:io/streams@0.2.2": ::wasi::io::streams,
-            "wasi:io/poll@0.2.2": ::wasi::io::poll,
-            "wasi:io/error@0.2.2": ::wasi::io::error,
-            "wasi:filesystem/types@0.2.2": ::wasi::filesystem::types,
+            "wasi:clocks/wall-clock@0.2.3": generate,
+            "wasi:io/streams@0.2.3": ::wasi::io::streams,
+            "wasi:io/poll@0.2.3": ::wasi::io::poll,
+            "wasi:io/error@0.2.3": ::wasi::io::error,
+            "wasi:filesystem/types@0.2.3": ::wasi::filesystem::types,
         },
         path: "../wit",
 
